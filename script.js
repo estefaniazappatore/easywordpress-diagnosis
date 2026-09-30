@@ -22,8 +22,25 @@ const submitContact = document.getElementById("submit-contact");
 const caseData = {};
 
 let currentQuestion = "start";
+
 let questionCount = 0;
+
 let interactionLocked = false;
+
+
+/* =====================================================
+   AVVIO
+===================================================== */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    setTimeout(() => {
+
+        showQuestion("start");
+
+    }, 400);
+
+});
 
 
 /* =====================================================
@@ -32,17 +49,15 @@ let interactionLocked = false;
 
 function addMessage(text, type = "bot") {
 
-    const message = document.createElement("div");
+    const message =
+        document.createElement("div");
 
-    message.className = `message ${type}`;
+    message.className =
+        `message ${type}`;
 
-    message.innerHTML = text;
+    message.textContent = text;
 
     chat.appendChild(message);
-
-    requestAnimationFrame(() => {
-        message.classList.add("visible");
-    });
 
     scrollToBottom();
 }
@@ -75,6 +90,10 @@ function hideTyping() {
 }
 
 
+/* =====================================================
+   UTILITY WAIT
+===================================================== */
+
 function wait(ms) {
 
     return new Promise(resolve => {
@@ -101,11 +120,13 @@ function updateProgress() {
                 : "informazioni"
         } raccolte`;
 
+
     const width =
         Math.min(
             8 + questionCount * 8,
             92
         );
+
 
     progressBar.style.width =
         `${width}%`;
@@ -119,15 +140,18 @@ function updateProgress() {
 
 async function showQuestion(id) {
 
-    const question = questions[id];
+    const question =
+        questions[id];
 
 
     if (!question) {
 
         console.error(
-            "Nodo non trovato:",
+            "Nodo domanda non trovato:",
             id
         );
+
+        interactionLocked = false;
 
         return;
 
@@ -139,21 +163,29 @@ async function showQuestion(id) {
     interactionLocked = true;
 
 
-    /* -------------------------------------------------
+    /* ---------------------------------------------
        RISULTATO DIRETTO
-    ------------------------------------------------- */
+    --------------------------------------------- */
 
     if (question.result) {
 
-        showResult(question.result);
+        await showResult(question.result);
 
         return;
 
     }
 
 
+    /* ---------------------------------------------
+       PROGRESS
+    --------------------------------------------- */
+
     updateProgress();
 
+
+    /* ---------------------------------------------
+       TYPING
+    --------------------------------------------- */
 
     showTyping();
 
@@ -162,12 +194,16 @@ async function showQuestion(id) {
     hideTyping();
 
 
+    /* ---------------------------------------------
+       MESSAGGIO
+    --------------------------------------------- */
+
     addMessage(question.text);
 
 
-    /* -------------------------------------------------
-       DOMANDA INTRODUTTIVA SENZA RISPOSTE
-    ------------------------------------------------- */
+    /* ---------------------------------------------
+       NODO INTRODUTTIVO
+    --------------------------------------------- */
 
     if (
         question.next &&
@@ -183,8 +219,11 @@ async function showQuestion(id) {
     }
 
 
-    await wait(300);
+    /* ---------------------------------------------
+       OPZIONI
+    --------------------------------------------- */
 
+    await wait(300);
 
     renderOptions(question.options);
 
@@ -194,60 +233,57 @@ async function showQuestion(id) {
 
 
 /* =====================================================
-   OPZIONI
+   RENDER OPZIONI
 ===================================================== */
 
 function renderOptions(questionOptions) {
 
     options.innerHTML = "";
 
-    options.classList.remove("show");
+
+    if (
+        !questionOptions ||
+        !questionOptions.length
+    ) {
+
+        return;
+
+    }
 
 
-    questionOptions.forEach((option, index) => {
+    questionOptions.forEach(
+        (option, index) => {
 
-        const button =
-            document.createElement("button");
-
-
-        button.className = "option";
+            const button =
+                document.createElement("button");
 
 
-        button.type = "button";
+            button.type = "button";
+
+            button.className = "option";
+
+            button.textContent =
+                option.label;
 
 
-        button.textContent =
-            option.label;
+            button.style.animationDelay =
+                `${index * 60}ms`;
 
 
-        button.style.animationDelay =
-            `${index * 60}ms`;
+            button.addEventListener(
+                "click",
+                () => {
 
+                    handleAnswer(option);
 
-        button.addEventListener(
-            "click",
-            () => {
-
-                if (interactionLocked) {
-                    return;
                 }
-
-                handleAnswer(option);
-
-            }
-        );
+            );
 
 
-        options.appendChild(button);
+            options.appendChild(button);
 
-    });
-
-
-    requestAnimationFrame(() => {
-
-        options.classList.add("show");
-
-    });
+        }
+    );
 
 
     scrollToBottom();
@@ -256,34 +292,36 @@ function renderOptions(questionOptions) {
 
 
 /* =====================================================
-   RISPOSTA
+   GESTIONE RISPOSTA
 ===================================================== */
 
 async function handleAnswer(option) {
 
     if (interactionLocked) {
+
         return;
+
     }
 
 
     interactionLocked = true;
 
 
-    options.classList.remove("show");
-
-
-    await wait(120);
-
-
     options.innerHTML = "";
 
 
-    addUserMessage(option.label);
+    addUserMessage(
+        option.label
+    );
 
 
     const question =
         questions[currentQuestion];
 
+
+    /* ---------------------------------------------
+       SALVATAGGIO RISPOSTA
+    --------------------------------------------- */
 
     if (
         question &&
@@ -299,14 +337,22 @@ async function handleAnswer(option) {
     await wait(400);
 
 
+    /* ---------------------------------------------
+       RISULTATO
+    --------------------------------------------- */
+
     if (option.result) {
 
-        showResult(option.result);
+        await showResult(option.result);
 
         return;
 
     }
 
+
+    /* ---------------------------------------------
+       PROSSIMA DOMANDA
+    --------------------------------------------- */
 
     if (option.next) {
 
@@ -335,9 +381,7 @@ async function showResult(resultId) {
 
     showTyping();
 
-
     await wait(850);
-
 
     hideTyping();
 
@@ -360,6 +404,10 @@ async function showResult(resultId) {
     }
 
 
+    /* ---------------------------------------------
+       PROGRESS COMPLETO
+    --------------------------------------------- */
+
     progressBar.style.width =
         "100%";
 
@@ -368,6 +416,10 @@ async function showResult(resultId) {
         "Analisi completata";
 
 
+    /* ---------------------------------------------
+       MESSAGGIO
+    --------------------------------------------- */
+
     addMessage(
         "Ho analizzato le informazioni che mi hai fornito."
     );
@@ -375,6 +427,10 @@ async function showResult(resultId) {
 
     await wait(500);
 
+
+    /* ---------------------------------------------
+       RISULTATO
+    --------------------------------------------- */
 
     resultBox.innerHTML = `
 
@@ -413,11 +469,17 @@ async function showResult(resultId) {
     `;
 
 
-    resultBox.classList.remove("hidden");
+    resultBox.classList.remove(
+        "hidden"
+    );
 
 
     await wait(500);
 
+
+    /* ---------------------------------------------
+       INVITO AL FORM
+    --------------------------------------------- */
 
     addMessage(
         "Se vuoi procedere, lasciaci i tuoi dati e prepariamo la richiesta."
@@ -427,11 +489,19 @@ async function showResult(resultId) {
     await wait(350);
 
 
-    contactForm.classList.remove("hidden");
+    contactForm.classList.remove(
+        "hidden"
+    );
 
+
+    /* ---------------------------------------------
+       BUTTON RISULTATO
+    --------------------------------------------- */
 
     const resultButton =
-        document.getElementById("result-button");
+        document.getElementById(
+            "result-button"
+        );
 
 
     if (resultButton) {
@@ -453,7 +523,6 @@ async function showResult(resultId) {
 
     interactionLocked = false;
 
-
     scrollToBottom();
 
 }
@@ -465,113 +534,148 @@ async function showResult(resultId) {
 
 submitContact.addEventListener(
     "click",
-    () => {
-
-        const name =
-            document
-                .getElementById("name")
-                .value
-                .trim();
+    handleContactSubmit
+);
 
 
-        const email =
-            document
-                .getElementById("email")
-                .value
-                .trim();
+function handleContactSubmit() {
+
+    const nameInput =
+        document.getElementById("name");
 
 
-        const website =
-            document
-                .getElementById("website")
-                .value
-                .trim();
+    const emailInput =
+        document.getElementById("email");
 
 
-        if (!name) {
-
-            alert(
-                "Inserisci il tuo nome."
-            );
-
-            return;
-
-        }
+    const websiteInput =
+        document.getElementById("website");
 
 
-        if (!email) {
-
-            alert(
-                "Inserisci la tua email."
-            );
-
-            return;
-
-        }
+    const name =
+        nameInput.value.trim();
 
 
-        if (!isValidEmail(email)) {
-
-            alert(
-                "Inserisci un indirizzo email valido."
-            );
-
-            return;
-
-        }
+    const email =
+        emailInput.value.trim();
 
 
-        if (!website) {
-
-            alert(
-                "Inserisci l'indirizzo del tuo sito."
-            );
-
-            return;
-
-        }
+    const website =
+        websiteInput.value.trim();
 
 
-        caseData.name =
-            name;
+    /* ---------------------------------------------
+       VALIDAZIONE NOME
+    --------------------------------------------- */
 
+    if (!name) {
 
-        caseData.email =
-            email;
-
-
-        caseData.website =
-            website;
-
-
-        contactForm.classList.add(
-            "hidden"
+        alert(
+            "Inserisci il tuo nome."
         );
 
+        nameInput.focus();
 
-        addMessage(
-            `Perfetto ${escapeHtml(name)} 👋`,
-            "bot"
-        );
-
-
-        setTimeout(() => {
-
-            addMessage(
-                "La tua richiesta è pronta per essere inviata."
-            );
-
-        }, 600);
-
-
-        setTimeout(() => {
-
-            showCaseSummary();
-
-        }, 1200);
+        return;
 
     }
-);
+
+
+    /* ---------------------------------------------
+       VALIDAZIONE EMAIL
+    --------------------------------------------- */
+
+    if (!email) {
+
+        alert(
+            "Inserisci la tua email."
+        );
+
+        emailInput.focus();
+
+        return;
+
+    }
+
+
+    if (!isValidEmail(email)) {
+
+        alert(
+            "Inserisci un indirizzo email valido."
+        );
+
+        emailInput.focus();
+
+        return;
+
+    }
+
+
+    /* ---------------------------------------------
+       VALIDAZIONE SITO
+    --------------------------------------------- */
+
+    if (!website) {
+
+        alert(
+            "Inserisci l'indirizzo del tuo sito."
+        );
+
+        websiteInput.focus();
+
+        return;
+
+    }
+
+
+    /* ---------------------------------------------
+       SALVATAGGIO
+    --------------------------------------------- */
+
+    caseData.name =
+        name;
+
+    caseData.email =
+        email;
+
+    caseData.website =
+        website;
+
+
+    /* ---------------------------------------------
+       NASCONDI FORM
+    --------------------------------------------- */
+
+    contactForm.classList.add(
+        "hidden"
+    );
+
+
+    /* ---------------------------------------------
+       CONFERMA
+    --------------------------------------------- */
+
+    addMessage(
+        `Perfetto ${name} 👋`
+    );
+
+
+    setTimeout(() => {
+
+        addMessage(
+            "La tua richiesta è pronta per essere inviata."
+        );
+
+    }, 600);
+
+
+    setTimeout(() => {
+
+        showCaseSummary();
+
+    }, 1200);
+
+}
 
 
 /* =====================================================
@@ -594,7 +698,6 @@ function showCaseSummary() {
             📋 Riepilogo richiesta
         </div>
 
-
         <div class="summary-row">
 
             <span>
@@ -606,7 +709,6 @@ function showCaseSummary() {
             </strong>
 
         </div>
-
 
         <div class="summary-row">
 
@@ -620,7 +722,6 @@ function showCaseSummary() {
 
         </div>
 
-
         <div class="summary-row">
 
             <span>
@@ -633,9 +734,7 @@ function showCaseSummary() {
 
         </div>
 
-
         <div class="summary-divider"></div>
-
 
         <div class="summary-data">
 
@@ -647,7 +746,6 @@ function showCaseSummary() {
 
 
     chat.appendChild(summary);
-
 
     scrollToBottom();
 
@@ -847,7 +945,91 @@ function formatValue(value) {
             "Elemento sparito",
 
         display:
-            "Visualizzazione errata"
+            "Visualizzazione errata",
+
+        error:
+            "Errore",
+
+        white_screen:
+            "Schermata bianca",
+
+        error_page:
+            "Pagina di errore",
+
+        partially_working:
+            "Parzialmente funzionante",
+
+        500:
+            "Errore 500",
+
+        database:
+            "Errore database",
+
+        403:
+            "Errore 403",
+
+        404:
+            "Errore 404",
+
+        password:
+            "Password non accettata",
+
+        login_page:
+            "Pagina login non disponibile",
+
+        login_loop:
+            "Loop di login",
+
+        cart:
+            "Carrello",
+
+        checkout:
+            "Checkout / pagamento",
+
+        orders:
+            "Ordini",
+
+        products:
+            "Prezzi / prodotti",
+
+        emails:
+            "Email ordini",
+
+        contact_form:
+            "Form di contatto",
+
+        sending:
+            "Invio",
+
+        receiving:
+            "Ricezione",
+
+        both:
+            "Invio e ricezione",
+
+        always:
+            "Sempre stato lento",
+
+        recent:
+            "Peggiorato recentemente",
+
+        suddenly:
+            "Diventato lento improvvisamente",
+
+        pages:
+            "Alcune pagine",
+
+        admin:
+            "Area amministrazione",
+
+        normal:
+            "Funziona normalmente",
+
+        strange:
+            "Comportamento anomalo",
+
+        down:
+            "Non si apre"
 
     };
 
@@ -858,15 +1040,21 @@ function formatValue(value) {
 
 
 /* =====================================================
-   UTILITY
+   VALIDAZIONE EMAIL
 ===================================================== */
 
 function isValidEmail(email) {
 
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        email
+    );
 
 }
 
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
 
 function escapeHtml(text) {
 
@@ -882,6 +1070,10 @@ function escapeHtml(text) {
 
 }
 
+
+/* =====================================================
+   SCROLL
+===================================================== */
 
 function scrollToBottom() {
 
@@ -900,14 +1092,3 @@ function scrollToBottom() {
     }, 50);
 
 }
-
-
-/* =====================================================
-   AVVIO
-===================================================== */
-
-setTimeout(() => {
-
-    showQuestion("start");
-
-}, 400);
