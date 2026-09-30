@@ -10,12 +10,6 @@ const progressCount = document.getElementById("progress-count");
 
 const submitContact = document.getElementById("submit-contact");
 
-const restartContainer =
-    document.getElementById("restart-container");
-
-const restartButton =
-    document.getElementById("restart-button");
-
 
 /* =====================================================
    STATO
@@ -34,11 +28,9 @@ let interactionLocked = false;
 
 function addMessage(text, type = "bot") {
 
-    const message =
-        document.createElement("div");
+    const message = document.createElement("div");
 
-    message.className =
-        `message ${type}`;
+    message.className = `message ${type}`;
 
     message.innerHTML = text;
 
@@ -53,12 +45,7 @@ function addMessage(text, type = "bot") {
 
 
 function addUserMessage(text) {
-
-    addMessage(
-        text,
-        "user"
-    );
-
+    addMessage(text, "user");
 }
 
 
@@ -77,16 +64,13 @@ function showTyping() {
 function hideTyping() {
 
     typing.classList.add("hidden");
-
 }
 
 
 function wait(ms) {
 
     return new Promise(resolve => {
-
         setTimeout(resolve, ms);
-
     });
 
 }
@@ -120,8 +104,7 @@ function updateProgress() {
 
 async function showQuestion(id) {
 
-    const question =
-        questions[id];
+    const question = questions[id];
 
     if (!question) {
 
@@ -129,8 +112,6 @@ async function showQuestion(id) {
             "Nodo non trovato:",
             id
         );
-
-        interactionLocked = false;
 
         return;
     }
@@ -140,9 +121,7 @@ async function showQuestion(id) {
     interactionLocked = true;
 
 
-    /* =================================================
-       RISULTATO DIRETTO
-    ================================================= */
+    /* Risultato diretto */
 
     if (question.result) {
 
@@ -162,9 +141,7 @@ async function showQuestion(id) {
     hideTyping();
 
 
-    addMessage(
-        question.text
-    );
+    addMessage(question.text);
 
 
     /*
@@ -178,9 +155,7 @@ async function showQuestion(id) {
 
         await wait(350);
 
-        showQuestion(
-            question.next
-        );
+        showQuestion(question.next);
 
         return;
     }
@@ -189,9 +164,7 @@ async function showQuestion(id) {
     await wait(300);
 
 
-    renderOptions(
-        question.options
-    );
+    renderOptions(question.options);
 
     interactionLocked = false;
 }
@@ -208,53 +181,41 @@ function renderOptions(questionOptions) {
     options.classList.remove("show");
 
 
-    questionOptions.forEach(
-        (option, index) => {
+    questionOptions.forEach((option, index) => {
 
-            const button =
-                document.createElement("button");
+        const button =
+            document.createElement("button");
 
-            button.className =
-                "option";
+        button.className = "option";
 
-            button.textContent =
-                option.label;
+        button.textContent = option.label;
 
-            button.style.animationDelay =
-                `${index * 60}ms`;
+        button.style.animationDelay =
+            `${index * 60}ms`;
 
 
-            button.addEventListener(
-                "click",
-                () => {
+        button.addEventListener(
+            "click",
+            () => {
 
-                    if (
-                        interactionLocked
-                    ) {
-                        return;
-                    }
-
-                    handleAnswer(
-                        option
-                    );
-
+                if (interactionLocked) {
+                    return;
                 }
-            );
+
+                handleAnswer(option);
+
+            }
+        );
 
 
-            options.appendChild(
-                button
-            );
+        options.appendChild(button);
 
-        }
-    );
+    });
 
 
     requestAnimationFrame(() => {
 
-        options.classList.add(
-            "show"
-        );
+        options.classList.add("show");
 
     });
 
@@ -276,18 +237,14 @@ async function handleAnswer(option) {
     interactionLocked = true;
 
 
-    options.classList.remove(
-        "show"
-    );
+    options.classList.remove("show");
 
     await wait(120);
 
     options.innerHTML = "";
 
 
-    addUserMessage(
-        option.label
-    );
+    addUserMessage(option.label);
 
 
     const question =
@@ -299,9 +256,7 @@ async function handleAnswer(option) {
         question.saveAs
     ) {
 
-        caseData[
-            question.saveAs
-        ] =
+        caseData[question.saveAs] =
             option.value;
 
     }
@@ -312,9 +267,7 @@ async function handleAnswer(option) {
 
     if (option.result) {
 
-        showResult(
-            option.result
-        );
+        showResult(option.result);
 
         return;
     }
@@ -324,15 +277,431 @@ async function handleAnswer(option) {
 
         await wait(250);
 
-        showQuestion(
-            option.next
-        );
+        showQuestion(option.next);
 
         return;
     }
 
 
     interactionLocked = false;
+}
+
+
+/* =====================================================
+   DETERMINAZIONE INTELLIGENTE DEL TIER
+===================================================== */
+
+function resolveResult(resultId) {
+
+    /*
+     * -------------------------------------------------
+     * SITO NON RAGGIUNGIBILE / ERRORI
+     * -------------------------------------------------
+     */
+
+    if (resultId === "SMART_SITE") {
+
+        const errorType =
+            caseData.errorType;
+
+        const recentChange =
+            caseData.recentChange;
+
+        /*
+         * Errori tecnici importanti
+         */
+
+        if (
+            errorType === "500" ||
+            errorType === "database"
+        ) {
+            return "COMPLEX";
+        }
+
+
+        /*
+         * Errori generici non identificabili
+         */
+
+        if (
+            errorType === "other_error" ||
+            errorType === "unknown"
+        ) {
+            return "QUOTE";
+        }
+
+
+        /*
+         * 403 può essere semplice,
+         * ma se il problema è comparso
+         * dopo modifiche importanti lo trattiamo
+         * come possibile intervento complesso.
+         */
+
+        if (
+            errorType === "403" &&
+            (
+                recentChange === "wordpress_update" ||
+                recentChange === "theme_update" ||
+                recentChange === "installation"
+            )
+        ) {
+            return "COMPLEX";
+        }
+
+
+        /*
+         * 404 / 403 / problemi circoscritti
+         */
+
+        return "FIX";
+    }
+
+
+    /* -------------------------------------------------
+       SITO PARZIALMENTE FUNZIONANTE
+       ------------------------------------------------- */
+
+    if (resultId === "SMART_PARTIAL") {
+
+        const scope =
+            caseData.partialScope;
+
+        const problem =
+            caseData.sitePartialProblem;
+
+        const change =
+            caseData.partialChange;
+
+
+        /*
+         * WooCommerce viene trattato
+         * più attentamente.
+         */
+
+        if (
+            problem === "woocommerce"
+        ) {
+            return "COMPLEX";
+        }
+
+
+        /*
+         * Più pagine = maggiore complessità.
+         */
+
+        if (
+            scope === "multiple_pages" ||
+            scope === "whole_site"
+        ) {
+
+            if (
+                change === "update" ||
+                change === "site_change"
+            ) {
+                return "COMPLEX";
+            }
+
+            return "QUOTE";
+        }
+
+
+        /*
+         * Una singola pagina / funzione
+         */
+
+        return "FIX";
+    }
+
+
+    /* -------------------------------------------------
+       ACCESSO WORDPRESS
+       ------------------------------------------------- */
+
+    if (resultId === "SMART_ADMIN") {
+
+        const problem =
+            caseData.adminProblem;
+
+        const publicSite =
+            caseData.publicSite;
+
+        const change =
+            caseData.adminChange;
+
+
+        /*
+         * Login loop, errore o pagina login
+         * non accessibile possono richiedere
+         * debugging.
+         */
+
+        if (
+            problem === "login_loop" ||
+            problem === "error" ||
+            problem === "login_page"
+        ) {
+            return "COMPLEX";
+        }
+
+
+        /*
+         * Password semplice = fix standard.
+         */
+
+        if (
+            problem === "password" &&
+            publicSite === "yes"
+        ) {
+            return "FIX";
+        }
+
+
+        /*
+         * Se l'accesso problematico è comparso
+         * dopo un aggiornamento/modifica,
+         * aumentiamo il livello.
+         */
+
+        if (
+            change === "update" ||
+            change === "change"
+        ) {
+            return "COMPLEX";
+        }
+
+
+        return "FIX";
+    }
+
+
+    /* -------------------------------------------------
+       WOOCOMMERCE
+       ------------------------------------------------- */
+
+    if (resultId === "SMART_WOO") {
+
+        const problem =
+            caseData.wooProblem;
+
+
+        /*
+         * Funzioni commerciali critiche:
+         * checkout e pagamenti.
+         */
+
+        if (
+            problem === "checkout"
+        ) {
+            return "COMPLEX";
+        }
+
+
+        /*
+         * Ordini possono coinvolgere
+         * più componenti WooCommerce.
+         */
+
+        if (
+            problem === "orders"
+        ) {
+            return "COMPLEX";
+        }
+
+
+        /*
+         * Carrello: se circoscritto può
+         * essere ancora un fix.
+         */
+
+        if (
+            problem === "cart"
+        ) {
+            return "FIX";
+        }
+
+
+        /*
+         * Prodotti/prezzi possono essere
+         * semplici problemi circoscritti.
+         */
+
+        if (
+            problem === "products"
+        ) {
+            return "FIX";
+        }
+
+
+        /*
+         * Email WooCommerce semplici.
+         */
+
+        if (
+            problem === "emails"
+        ) {
+            return "FIX";
+        }
+
+
+        /*
+         * "Altro" è troppo generico.
+         */
+
+        return "QUOTE";
+    }
+
+
+    /* -------------------------------------------------
+       EMAIL
+       ------------------------------------------------- */
+
+    if (resultId === "SMART_EMAIL") {
+
+        const type =
+            caseData.emailType;
+
+        const direction =
+            caseData.emailDirection;
+
+
+        /*
+         * Email WordPress semplici
+         */
+
+        if (
+            type === "wordpress" ||
+            type === "contact_form"
+        ) {
+            return "FIX";
+        }
+
+
+        /*
+         * WooCommerce email:
+         * possono essere semplici, ma se
+         * riguardano tutto il sistema
+         * preferiamo una valutazione.
+         */
+
+        if (
+            type === "woocommerce"
+        ) {
+            return "FIX";
+        }
+
+
+        /*
+         * Tutte le email + entrambi i versi
+         * è un problema più ampio.
+         */
+
+        if (
+            type === "all" &&
+            direction === "both"
+        ) {
+            return "COMPLEX";
+        }
+
+
+        /*
+         * Problema non determinabile
+         */
+
+        if (
+            type === "unknown" ||
+            direction === "unknown"
+        ) {
+            return "QUOTE";
+        }
+
+
+        return "FIX";
+    }
+
+
+    /* -------------------------------------------------
+       FUNZIONALITÀ / ELEMENTI
+       ------------------------------------------------- */
+
+    if (resultId === "SMART_FUNCTION") {
+
+        const problem =
+            caseData.functionProblem;
+
+        const scope =
+            caseData.functionScope;
+
+        const change =
+            caseData.functionChange;
+
+
+        /*
+         * WooCommerce viene trattato come
+         * intervento commerciale/tecnico.
+         */
+
+        if (
+            problem === "woocommerce"
+        ) {
+            return "COMPLEX";
+        }
+
+
+        /*
+         * Tutto il sito + modifica recente
+         */
+
+        if (
+            scope === "whole_site" &&
+            (
+                change === "wordpress_update" ||
+                change === "plugin_update" ||
+                change === "theme_update" ||
+                change === "installation"
+            )
+        ) {
+            return "COMPLEX";
+        }
+
+
+        /*
+         * Più pagine + aggiornamento
+         */
+
+        if (
+            scope === "multiple_pages" &&
+            (
+                change === "wordpress_update" ||
+                change === "plugin_update" ||
+                change === "theme_update"
+            )
+        ) {
+            return "COMPLEX";
+        }
+
+
+        /*
+         * Problema circoscritto
+         */
+
+        if (
+            scope === "one_page"
+        ) {
+            return "FIX";
+        }
+
+
+        return "FIX";
+    }
+
+
+    /*
+     * Se abbiamo già un risultato esplicito,
+     * lo manteniamo.
+     */
+
+    return resultId;
 }
 
 
@@ -351,25 +720,31 @@ async function showResult(resultId) {
     hideTyping();
 
 
+    /*
+     * Risolviamo il risultato effettivo
+     * in base alle risposte raccolte.
+     */
+
+    const resolvedResultId =
+        resolveResult(resultId);
+
+
     const result =
-        results[resultId];
+        results[resolvedResultId];
 
 
     if (!result) {
 
         console.error(
             "Risultato non trovato:",
-            resultId
+            resolvedResultId
         );
-
-        interactionLocked = false;
 
         return;
     }
 
 
-    progressBar.style.width =
-        "100%";
+    progressBar.style.width = "100%";
 
     progressCount.textContent =
         "Analisi completata";
@@ -405,14 +780,13 @@ async function showResult(resultId) {
             ${result.price}
         </div>
 
-        <div class="result-meta">
+        <div class="result-price-label">
             ${result.meta}
         </div>
 
         <button
             id="result-button"
-            class="result-button"
-            type="button"
+            class="result-button primary"
         >
             ${result.button}
         </button>
@@ -420,9 +794,7 @@ async function showResult(resultId) {
     `;
 
 
-    resultBox.classList.remove(
-        "hidden"
-    );
+    resultBox.classList.remove("hidden");
 
 
     await wait(500);
@@ -436,25 +808,11 @@ async function showResult(resultId) {
     await wait(350);
 
 
-    contactForm.classList.remove(
-        "hidden"
-    );
-
-
-    /*
-     * Mostriamo anche il pulsante
-     * per ricominciare la diagnosi.
-     */
-
-    restartContainer.classList.remove(
-        "hidden"
-    );
+    contactForm.classList.remove("hidden");
 
 
     const resultButton =
-        document.getElementById(
-            "result-button"
-        );
+        document.getElementById("result-button");
 
 
     if (resultButton) {
@@ -549,19 +907,14 @@ submitContact.addEventListener(
         }
 
 
-        caseData.name =
-            name;
+        caseData.name = name;
 
-        caseData.email =
-            email;
+        caseData.email = email;
 
-        caseData.website =
-            website;
+        caseData.website = website;
 
 
-        contactForm.classList.add(
-            "hidden"
-        );
+        contactForm.classList.add("hidden");
 
 
         addMessage(
@@ -656,9 +1009,7 @@ function showCaseSummary() {
     `;
 
 
-    chat.appendChild(
-        summary
-    );
+    chat.appendChild(summary);
 
     scrollToBottom();
 }
@@ -856,7 +1207,55 @@ function formatValue(value) {
             "Elemento sparito",
 
         display:
-            "Visualizzazione errata"
+            "Visualizzazione errata",
+
+        checkout:
+            "Checkout / pagamento",
+
+        cart:
+            "Carrello",
+
+        orders:
+            "Ordini",
+
+        products:
+            "Prezzi / prodotti",
+
+        emails:
+            "Email WooCommerce",
+
+        woocommerce:
+            "WooCommerce",
+
+        wordpress:
+            "Email WordPress",
+
+        contact_form:
+            "Form di contatto",
+
+        sending:
+            "Invio",
+
+        receiving:
+            "Ricezione",
+
+        both:
+            "Invio e ricezione",
+
+        error:
+            "Errore",
+
+        500:
+            "500 / Internal Server Error",
+
+        database:
+            "Database connection error",
+
+        403:
+            "403 / Access denied",
+
+        404:
+            "404 / Page not found"
 
     };
 
@@ -866,139 +1265,12 @@ function formatValue(value) {
 
 
 /* =====================================================
-   RESTART
-===================================================== */
-
-restartButton.addEventListener(
-    "click",
-    async () => {
-
-        /*
-         * Blocchiamo temporaneamente
-         * l'interazione mentre resettiamo.
-         */
-
-        interactionLocked = true;
-
-
-        /*
-         * Pulizia completa dei dati.
-         */
-
-        Object.keys(caseData).forEach(
-            key => {
-                delete caseData[key];
-            }
-        );
-
-
-        /*
-         * Reset stato.
-         */
-
-        currentQuestion =
-            "start";
-
-        questionCount =
-            0;
-
-
-        /*
-         * Pulizia interfaccia.
-         */
-
-        chat.innerHTML = "";
-
-        options.innerHTML = "";
-
-        resultBox.innerHTML = "";
-
-        resultBox.classList.add(
-            "hidden"
-        );
-
-        contactForm.classList.add(
-            "hidden"
-        );
-
-        restartContainer.classList.add(
-            "hidden"
-        );
-
-        hideTyping();
-
-
-        /*
-         * Reset form.
-         */
-
-        document
-            .getElementById("name")
-            .value = "";
-
-        document
-            .getElementById("email")
-            .value = "";
-
-        document
-            .getElementById("website")
-            .value = "";
-
-
-        /*
-         * Reset progress bar.
-         */
-
-        progressBar.style.width =
-            "0%";
-
-        progressCount.textContent =
-            "";
-
-
-        /*
-         * Torniamo in cima.
-         */
-
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
-
-
-        /*
-         * Piccola pausa per rendere
-         * il restart più naturale.
-         */
-
-        await wait(300);
-
-
-        interactionLocked =
-            false;
-
-
-        /*
-         * Riparte la diagnosi.
-         */
-
-        showQuestion(
-            "start"
-        );
-
-    }
-);
-
-
-/* =====================================================
    UTILITY
 ===================================================== */
 
 function isValidEmail(email) {
 
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-        email
-    );
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 }
 
@@ -1008,8 +1280,7 @@ function escapeHtml(text) {
     const div =
         document.createElement("div");
 
-    div.textContent =
-        text;
+    div.textContent = text;
 
     return div.innerHTML;
 
@@ -1041,8 +1312,6 @@ function scrollToBottom() {
 
 setTimeout(() => {
 
-    showQuestion(
-        "start"
-    );
+    showQuestion("start");
 
 }, 400);
