@@ -1,1 +1,48 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyWordPress — Diagnosi del problema</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="app">
+        <div class="chat-window">
+            <header class="chat-header">
+                <div class="logo">🔧</div>
+                <div>
+                    <h1>EasyWordPress</h1>
+                    <p>Diagnosi del problema</p>
+                </div>
+            </header>
+            <div id="chat" class="chat"></div>
+            <div id="options" class="options"></div>
+            <div id="contact-form" class="contact-form hidden">
+                <h2>Ricevi il risultato</h2>
+                <p>
+                    Inserisci nome ed email e ti invieremo
+                    il riepilogo della diagnosi.
+                </p>
+                <label for="name">Nome</label>
+                <input
+                    type="text"
+                    id="name"
+                    placeholder="Mario"
+                >
+                <label for="email">Email</label>
+                <input
+                    type="email"
+                    id="email"
+                    placeholder="mario@email.it"
+                >
+                <button id="submit-contact">
+                    Inviami la diagnosi →
+                </button>
+            </div>
+        </div>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
 
