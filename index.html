@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,11 +18,9 @@
 
             <header class="chat-header">
 
-                <div class="logo">
-                    🔧
-                </div>
+                <div class="logo">🔧</div>
 
-                <div>
+                <div class="brand">
                     <h1>EasyWordPress</h1>
                     <p>Diagnosi del problema</p>
                 </div>
@@ -34,10 +33,15 @@
             </header>
 
 
-            <div class="progress-container">
+            <div class="progress-area">
 
-                <div class="progress-bar">
-                    <div id="progress"></div>
+                <div class="progress-label">
+                    <span id="progress-text">Analisi del problema</span>
+                    <span id="progress-count"></span>
+                </div>
+
+                <div class="progress-track">
+                    <div id="progress-bar"></div>
                 </div>
 
             </div>
@@ -47,11 +51,9 @@
 
 
             <div id="typing" class="typing hidden">
-
                 <span></span>
                 <span></span>
                 <span></span>
-
             </div>
 
 
@@ -65,63 +67,54 @@
 
                 <div class="form-intro">
 
-                    <div class="form-icon">
-                        ✉️
-                    </div>
+                    <div class="form-icon">✉️</div>
 
                     <div>
-                        <h2>Ricevi il risultato</h2>
+                        <h2>Procediamo?</h2>
 
                         <p>
-                            Inserisci i tuoi dati e ti invieremo
-                            il riepilogo della diagnosi.
+                            Inserisci i tuoi dati per ricevere
+                            il riepilogo e procedere con la richiesta.
                         </p>
                     </div>
 
                 </div>
 
 
-                <label for="name">
-                    Nome
-                </label>
+                <label for="name">Nome</label>
 
                 <input
-                    type="text"
                     id="name"
+                    type="text"
                     placeholder="Il tuo nome"
                 >
 
 
-                <label for="email">
-                    Email
-                </label>
+                <label for="email">Email</label>
 
                 <input
-                    type="email"
                     id="email"
+                    type="email"
                     placeholder="nome@email.it"
                 >
 
 
-                <label for="website">
-                    Indirizzo del sito
-                </label>
+                <label for="website">Sito web</label>
 
                 <input
-                    type="url"
                     id="website"
+                    type="url"
                     placeholder="https://iltuosito.it"
                 >
 
 
                 <button id="submit-contact">
-                    Inviami la diagnosi →
+                    Continua →
                 </button>
 
 
                 <small>
-                    Useremo questi dati solo per gestire
-                    la tua richiesta.
+                    I dati saranno utilizzati per gestire la tua richiesta.
                 </small>
 
             </div>
@@ -132,7 +125,9 @@
 
 
     <script src="questions.js"></script>
+    <script src="results.js"></script>
     <script src="script.js"></script>
 
 </body>
+
 </html>
