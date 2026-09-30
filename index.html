@@ -17,7 +17,6 @@
         <div class="chat-window">
 
             <!-- HEADER -->
-
             <header class="chat-header">
 
                 <div class="logo">🔧</div>
@@ -36,12 +35,11 @@
 
 
             <!-- PROGRESS -->
-
             <div class="progress-container">
 
                 <div class="progress-info">
 
-                    <span id="progress-label">
+                    <span id="progress-text">
                         Analisi del problema
                     </span>
 
@@ -57,12 +55,10 @@
 
 
             <!-- CHAT -->
-
             <div id="chat" class="chat"></div>
 
 
             <!-- TYPING -->
-
             <div id="typing" class="typing hidden">
 
                 <span></span>
@@ -73,17 +69,14 @@
 
 
             <!-- OPTIONS -->
-
             <div id="options" class="options"></div>
 
 
             <!-- RESULT -->
-
             <div id="result" class="result hidden"></div>
 
 
             <!-- CONTACT FORM -->
-
             <div id="contact-form" class="contact-form hidden">
 
                 <div class="form-intro">
@@ -94,7 +87,9 @@
 
                     <div>
 
-                        <h2>Procediamo?</h2>
+                        <h2>
+                            Procediamo?
+                        </h2>
 
                         <p>
                             Inserisci i tuoi dati per ricevere
@@ -163,9 +158,13 @@
 
     <!--
         ORDINE IMPORTANTE:
-        1. questions.js contiene le domande
-        2. results.js contiene i risultati
-        3. script.js contiene la logica dell'app
+
+        1. questions.js
+        2. results.js
+        3. script.js
+
+        script.js usa questions e results,
+        quindi devono essere caricati prima.
     -->
 
     <script src="questions.js"></script>
