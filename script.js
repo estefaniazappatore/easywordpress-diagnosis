@@ -1,1317 +1,898 @@
-const chat = document.getElementById("chat");
-const options = document.getElementById("options");
-const typing = document.getElementById("typing");
 
-const resultBox = document.getElementById("result");
-const contactForm = document.getElementById("contact-form");
+/* EasyWordPress MVP — Chat e logica commerciale */
 
-const progressBar = document.getElementById("progress-bar");
-const progressCount = document.getElementById("progress-count");
+const chat = document.getElementById('chat');
+const options = document.getElementById('options');
+const typing = document.getElementById('typing');
+const resultBox = document.getElementById('result');
+const contactForm = document.getElementById('contact-form');
 
-const submitContact = document.getElementById("submit-contact");
+const progressBar = document.getElementById('progress-bar');
+const progressCount = document.getElementById('progress-count');
 
+const submitContact = document.getElementById('submit-contact');
+const restartContainer = document.getElementById('restart-container');
+const restartButton = document.getElementById('restart-button');
 
-/* =====================================================
-   STATO
-===================================================== */
+/* STATO DEL QUESTIONARIO */
 
-const caseData = {};
-
-let currentQuestion = "start";
+let caseData = {};
+let currentQuestion = 'start';
 let questionCount = 0;
-let interactionLocked = false;
+let interactionLocked = true;
+let session = 0;
+let resultShown = false;
+let resultTier = '';
+let summaryShown = false;
 
+/* UTILITY */
 
-/* =====================================================
-   MESSAGGI
-===================================================== */
+const wait = ms =>
+  new Promise(resolve => setTimeout(resolve, ms));
 
-function addMessage(text, type = "bot") {
+const escapeHtml = text => {
+  const el = document.createElement('div');
+  el.textContent = String(text ?? '');
+  return el.innerHTML;
+};
 
-    const message = document.createElement("div");
-
-    message.className = `message ${type}`;
-
-    message.innerHTML = text;
-
-    chat.appendChild(message);
-
-    requestAnimationFrame(() => {
-        message.classList.add("visible");
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    window.scrollTo({
+      top: document.body.scrollHeight,
+      behavior: 'smooth'
     });
+  });
+}
 
+/* MESSAGGI */
+
+function addMessage(text, type = 'bot') {
+  const el = document.createElement('div');
+
+  el.className = 'message ' + type;
+  el.textContent = text;
+
+  chat.appendChild(el);
+  scrollToBottom();
+}
+
+function setTyping(visible) {
+  typing.classList.toggle('hidden', !visible);
+
+  if (visible) {
     scrollToBottom();
+  }
 }
 
-
-function addUserMessage(text) {
-    addMessage(text, "user");
-}
-
-
-/* =====================================================
-   TYPING
-===================================================== */
-
-function showTyping() {
-
-    typing.classList.remove("hidden");
-
-    scrollToBottom();
-}
-
-
-function hideTyping() {
-
-    typing.classList.add("hidden");
-}
-
-
-function wait(ms) {
-
-    return new Promise(resolve => {
-        setTimeout(resolve, ms);
-    });
-
-}
-
-
-/* =====================================================
-   PROGRESS
-===================================================== */
+/* AVANZAMENTO */
 
 function updateProgress() {
+  questionCount++;
 
-    questionCount++;
+  progressCount.textContent =
+    `${questionCount} ${
+      questionCount === 1
+        ? 'informazione'
+        : 'informazioni'
+    } raccolte`;
 
-    progressCount.textContent =
-        `${questionCount} ${questionCount === 1 ? "informazione" : "informazioni"} raccolte`;
-
-    const width =
-        Math.min(
-            8 + questionCount * 8,
-            92
-        );
-
-    progressBar.style.width =
-        `${width}%`;
+  progressBar.style.width =
+    `${Math.min(8 + questionCount * 8, 92)}%`;
 }
 
+/* OPZIONI */
 
-/* =====================================================
-   MOSTRA DOMANDA
-===================================================== */
+function renderOptions(list) {
+  options.innerHTML = '';
+
+  for (const [i, item] of list.entries()) {
+    const btn = document.createElement('button');
+
+    btn.type = 'button';
+    btn.className = 'option';
+    btn.textContent = item.label;
+    btn.style.animationDelay = `${i * 50}ms`;
+
+    btn.addEventListener('click', () => {
+      handleAnswer(item);
+    });
+
+    options.appendChild(btn);
+  }
+
+  interactionLocked = false;
+  scrollToBottom();
+}
+
+/* DOMANDE */
 
 async function showQuestion(id) {
+  const stamp = session;
+  const q = questions[id];
 
-    const question = questions[id];
+  if (!q) {
+    console.error('Domanda assente', id);
+    return;
+  }
 
-    if (!question) {
+  currentQuestion = id;
+  interactionLocked = true;
+  options.innerHTML = '';
 
-        console.error(
-            "Nodo non trovato:",
-            id
-        );
+  if (q.result) {
+    showDetailsPrompt(q.result);
+    return;
+  }
 
-        return;
+  updateProgress();
+
+  setTyping(true);
+  await wait(300);
+
+  if (stamp !== session) return;
+
+  setTyping(false);
+  addMessage(q.text);
+
+  if (q.next && !q.options) {
+    await wait(180);
+
+    if (stamp === session) {
+      showQuestion(q.next);
     }
 
-    currentQuestion = id;
+    return;
+  }
 
-    interactionLocked = true;
+  if (!q.options) {
+    console.error('Domanda senza opzioni', id);
+    return;
+  }
 
+  renderOptions(q.options);
+}
 
-    /* Risultato diretto */
+/* RISPOSTE */
 
-    if (question.result) {
+async function handleAnswer(item) {
+  if (interactionLocked) return;
 
-        showResult(question.result);
+  interactionLocked = true;
 
-        return;
-    }
+  const stamp = session;
 
+  options.innerHTML = '';
+  addMessage(item.label, 'user');
 
-    updateProgress();
+  const q = questions[currentQuestion];
 
+  if (q && q.saveAs) {
+    caseData[q.saveAs] = item.value;
+  }
 
-    showTyping();
+  await wait(180);
 
-    await wait(550);
+  if (stamp !== session) return;
 
-    hideTyping();
+  if (item.next) {
+    showQuestion(item.next);
+  } else if (item.result) {
+    showDetailsPrompt(item.result);
+  }
+}
 
+/* ======================================
+   CLASSIFICAZIONE COMMERCIALE
+====================================== */
 
-    addMessage(question.text);
+function resolveResult(raw) {
 
+  // Prima distinguiamo le richieste
+  // che NON riguardano la riparazione.
 
-    /*
-     * Domanda introduttiva senza risposte.
-     */
+  if (
+    raw === 'OUT' ||
+    (
+      caseData.requestType &&
+      caseData.requestType !== 'small_change' &&
+      caseData.requestType !== 'repair'
+    )
+  ) {
+    return 'OUT';
+  }
+
+  if (caseData.requestType === 'small_change') {
+    return 'QUOTE';
+  }
+
+  // WooCommerce: sempre TIER 2.
+  // Controlliamo tutti i percorsi
+  // dai quali è possibile arrivarci.
+
+  const woo =
+    caseData.mainProblem === 'woocommerce' ||
+    caseData.wooProblem !== undefined ||
+    caseData.sitePartialProblem === 'woocommerce' ||
+    caseData.functionProblem === 'woocommerce' ||
+    caseData.emailType === 'woocommerce' ||
+    caseData.slowArea === 'woocommerce';
+
+  if (woo) {
+    return 'COMPLEX';
+  }
+
+  // Risultati già determinati.
+
+  if (
+    raw === 'COMPLEX' ||
+    raw === 'FIX' ||
+    raw === 'QUOTE'
+  ) {
+    return raw;
+  }
+
+  /* SITO NON ACCESSIBILE */
+
+  if (raw === 'SMART_SITE') {
 
     if (
-        question.next &&
-        !question.options
+      ['500', 'database'].includes(caseData.errorType)
     ) {
-
-        await wait(350);
-
-        showQuestion(question.next);
-
-        return;
+      return 'COMPLEX';
     }
-
-
-    await wait(300);
-
-
-    renderOptions(question.options);
-
-    interactionLocked = false;
-}
-
-
-/* =====================================================
-   OPZIONI
-===================================================== */
-
-function renderOptions(questionOptions) {
-
-    options.innerHTML = "";
-
-    options.classList.remove("show");
-
-
-    questionOptions.forEach((option, index) => {
-
-        const button =
-            document.createElement("button");
-
-        button.className = "option";
-
-        button.textContent = option.label;
-
-        button.style.animationDelay =
-            `${index * 60}ms`;
-
-
-        button.addEventListener(
-            "click",
-            () => {
-
-                if (interactionLocked) {
-                    return;
-                }
-
-                handleAnswer(option);
-
-            }
-        );
-
-
-        options.appendChild(button);
-
-    });
-
-
-    requestAnimationFrame(() => {
-
-        options.classList.add("show");
-
-    });
-
-
-    scrollToBottom();
-}
-
-
-/* =====================================================
-   RISPOSTA
-===================================================== */
-
-async function handleAnswer(option) {
-
-    if (interactionLocked) {
-        return;
-    }
-
-    interactionLocked = true;
-
-
-    options.classList.remove("show");
-
-    await wait(120);
-
-    options.innerHTML = "";
-
-
-    addUserMessage(option.label);
-
-
-    const question =
-        questions[currentQuestion];
-
 
     if (
-        question &&
-        question.saveAs
+      ['hosting', 'other_error', 'unknown']
+        .includes(caseData.errorType)
     ) {
-
-        caseData[question.saveAs] =
-            option.value;
-
+      return 'QUOTE';
     }
 
-
-    await wait(400);
-
-
-    if (option.result) {
-
-        showResult(option.result);
-
-        return;
+    if (caseData.siteBehaviour === 'white_screen') {
+      return (
+        caseData.recentChange === 'wordpress_update' ||
+        caseData.recentChange === 'theme_update'
+      )
+        ? 'COMPLEX'
+        : 'QUOTE';
     }
 
-
-    if (option.next) {
-
-        await wait(250);
-
-        showQuestion(option.next);
-
-        return;
+    if (caseData.errorType === '403') {
+      return 'QUOTE';
     }
 
+    if (
+      caseData.errorType === '404' &&
+      caseData.adminAccess === 'yes'
+    ) {
+      return 'FIX';
+    }
 
-    interactionLocked = false;
+    return 'QUOTE';
+  }
+
+  /* SITO PARZIALMENTE ROTTO */
+
+  if (raw === 'SMART_PARTIAL') {
+
+    if (caseData.partialAdminAccess === 'no') {
+      return 'COMPLEX';
+    }
+
+    if (
+      ['multiple_pages', 'whole_site']
+        .includes(caseData.partialScope)
+    ) {
+      return 'COMPLEX';
+    }
+
+    if (
+      caseData.partialScope === 'unknown' ||
+      caseData.sitePartialProblem === 'other'
+    ) {
+      return 'QUOTE';
+    }
+
+    return 'FIX';
+  }
+
+  /* ACCESSO WORDPRESS */
+
+  if (raw === 'SMART_ADMIN') {
+
+    if (
+      caseData.adminProblem === 'password' &&
+      caseData.publicSite === 'yes'
+    ) {
+      return 'FIX';
+    }
+
+    if (
+      caseData.publicSite === 'no' ||
+      ['login_loop', 'login_page', 'error']
+        .includes(caseData.adminProblem) ||
+      ['update', 'change']
+        .includes(caseData.adminChange)
+    ) {
+      return 'COMPLEX';
+    }
+
+    return caseData.adminProblem === 'password'
+      ? 'FIX'
+      : 'QUOTE';
+  }
+
+  /* EMAIL WORDPRESS */
+
+  if (raw === 'SMART_EMAIL') {
+
+    if (
+      caseData.emailType === 'all' &&
+      caseData.emailDirection === 'both'
+    ) {
+      return 'COMPLEX';
+    }
+
+    if (
+      caseData.emailType === 'unknown' ||
+      caseData.emailDirection === 'unknown'
+    ) {
+      return 'QUOTE';
+    }
+
+    return 'FIX';
+  }
+
+  /* PAGINE, IMMAGINI E FUNZIONALITÀ */
+
+  if (raw === 'SMART_FUNCTION') {
+
+    if (caseData.functionAdminAccess === 'no') {
+      return 'COMPLEX';
+    }
+
+    if (
+      ['multiple_pages', 'whole_site']
+        .includes(caseData.functionScope)
+    ) {
+      return 'COMPLEX';
+    }
+
+    if (
+      caseData.functionScope === 'unknown' ||
+      caseData.functionProblem === 'other'
+    ) {
+      return 'QUOTE';
+    }
+
+    if (
+      caseData.functionChange === 'wordpress_update' ||
+      caseData.functionChange === 'theme_update'
+    ) {
+      return 'COMPLEX';
+    }
+
+    return 'FIX';
+  }
+
+  // Se il sistema non riesce a
+  // determinare il problema, non
+  // propone automaticamente €99.
+
+  return 'QUOTE';
 }
 
+/* ======================================
+   DESCRIZIONE LIBERA DEL PROBLEMA
+====================================== */
 
-/* =====================================================
-   DETERMINAZIONE INTELLIGENTE DEL TIER
-===================================================== */
+function showDetailsPrompt(raw) {
 
-function resolveResult(resultId) {
+  if (resultShown) return;
 
-    /*
-     * -------------------------------------------------
-     * SITO NON RAGGIUNGIBILE / ERRORI
-     * -------------------------------------------------
-     */
+  interactionLocked = true;
+  setTyping(false);
 
-    if (resultId === "SMART_SITE") {
+  options.innerHTML = '';
 
-        const errorType =
-            caseData.errorType;
+  addMessage(
+    'Ultima domanda: vuoi descrivere meglio il problema? ' +
+    'È facoltativo, ma ci aiuta a capire cosa succede.'
+  );
 
-        const recentChange =
-            caseData.recentChange;
+  const wrapper = document.createElement('div');
 
-        /*
-         * Errori tecnici importanti
-         */
+  wrapper.style.cssText =
+    'padding:8px 24px 26px;' +
+    'display:flex;' +
+    'flex-direction:column;' +
+    'gap:10px';
 
-        if (
-            errorType === "500" ||
-            errorType === "database"
-        ) {
-            return "COMPLEX";
-        }
+  const field = document.createElement('textarea');
 
+  field.id = 'problem-details';
+  field.rows = 4;
+  field.maxLength = 2000;
 
-        /*
-         * Errori generici non identificabili
-         */
+  field.placeholder =
+    'Cosa succede, cosa dovrebbe succedere, da quando? ' +
+    'Non inserire password o dati sensibili.';
 
-        if (
-            errorType === "other_error" ||
-            errorType === "unknown"
-        ) {
-            return "QUOTE";
-        }
+  field.style.cssText =
+    'width:100%;' +
+    'padding:14px;' +
+    'border:1px solid #deded9;' +
+    'border-radius:12px;' +
+    'font:inherit;' +
+    'font-size:13px;' +
+    'resize:vertical;' +
+    'line-height:1.5';
 
+  const button = document.createElement('button');
 
-        /*
-         * 403 può essere semplice,
-         * ma se il problema è comparso
-         * dopo modifiche importanti lo trattiamo
-         * come possibile intervento complesso.
-         */
+  button.type = 'button';
+  button.className = 'result-button';
+  button.style.marginTop = '0';
 
-        if (
-            errorType === "403" &&
-            (
-                recentChange === "wordpress_update" ||
-                recentChange === "theme_update" ||
-                recentChange === "installation"
-            )
-        ) {
-            return "COMPLEX";
-        }
+  button.textContent =
+    'Visualizza la valutazione →';
 
+  wrapper.append(field, button);
+  options.appendChild(wrapper);
 
-        /*
-         * 404 / 403 / problemi circoscritti
-         */
+  button.addEventListener('click', () => {
 
-        return "FIX";
+    if (resultShown) return;
+
+    caseData.problemDetails = field.value.trim();
+
+    options.innerHTML = '';
+
+    if (caseData.problemDetails) {
+      addMessage(caseData.problemDetails, 'user');
     }
 
-
-    /* -------------------------------------------------
-       SITO PARZIALMENTE FUNZIONANTE
-       ------------------------------------------------- */
-
-    if (resultId === "SMART_PARTIAL") {
-
-        const scope =
-            caseData.partialScope;
-
-        const problem =
-            caseData.sitePartialProblem;
-
-        const change =
-            caseData.partialChange;
-
-
-        /*
-         * WooCommerce viene trattato
-         * più attentamente.
-         */
-
-        if (
-            problem === "woocommerce"
-        ) {
-            return "COMPLEX";
-        }
-
-
-        /*
-         * Più pagine = maggiore complessità.
-         */
-
-        if (
-            scope === "multiple_pages" ||
-            scope === "whole_site"
-        ) {
-
-            if (
-                change === "update" ||
-                change === "site_change"
-            ) {
-                return "COMPLEX";
-            }
-
-            return "QUOTE";
-        }
-
-
-        /*
-         * Una singola pagina / funzione
-         */
-
-        return "FIX";
-    }
-
-
-    /* -------------------------------------------------
-       ACCESSO WORDPRESS
-       ------------------------------------------------- */
-
-    if (resultId === "SMART_ADMIN") {
-
-        const problem =
-            caseData.adminProblem;
-
-        const publicSite =
-            caseData.publicSite;
-
-        const change =
-            caseData.adminChange;
-
-
-        /*
-         * Login loop, errore o pagina login
-         * non accessibile possono richiedere
-         * debugging.
-         */
-
-        if (
-            problem === "login_loop" ||
-            problem === "error" ||
-            problem === "login_page"
-        ) {
-            return "COMPLEX";
-        }
-
-
-        /*
-         * Password semplice = fix standard.
-         */
-
-        if (
-            problem === "password" &&
-            publicSite === "yes"
-        ) {
-            return "FIX";
-        }
-
-
-        /*
-         * Se l'accesso problematico è comparso
-         * dopo un aggiornamento/modifica,
-         * aumentiamo il livello.
-         */
-
-        if (
-            change === "update" ||
-            change === "change"
-        ) {
-            return "COMPLEX";
-        }
-
-
-        return "FIX";
-    }
-
-
-    /* -------------------------------------------------
-       WOOCOMMERCE
-       ------------------------------------------------- */
-
-    if (resultId === "SMART_WOO") {
-
-        const problem =
-            caseData.wooProblem;
-
-
-        /*
-         * Funzioni commerciali critiche:
-         * checkout e pagamenti.
-         */
-
-        if (
-            problem === "checkout"
-        ) {
-            return "COMPLEX";
-        }
-
-
-        /*
-         * Ordini possono coinvolgere
-         * più componenti WooCommerce.
-         */
-
-        if (
-            problem === "orders"
-        ) {
-            return "COMPLEX";
-        }
-
-
-        /*
-         * Carrello: se circoscritto può
-         * essere ancora un fix.
-         */
-
-        if (
-            problem === "cart"
-        ) {
-            return "FIX";
-        }
-
-
-        /*
-         * Prodotti/prezzi possono essere
-         * semplici problemi circoscritti.
-         */
-
-        if (
-            problem === "products"
-        ) {
-            return "FIX";
-        }
-
-
-        /*
-         * Email WooCommerce semplici.
-         */
-
-        if (
-            problem === "emails"
-        ) {
-            return "FIX";
-        }
-
-
-        /*
-         * "Altro" è troppo generico.
-         */
-
-        return "QUOTE";
-    }
-
-
-    /* -------------------------------------------------
-       EMAIL
-       ------------------------------------------------- */
-
-    if (resultId === "SMART_EMAIL") {
-
-        const type =
-            caseData.emailType;
-
-        const direction =
-            caseData.emailDirection;
-
-
-        /*
-         * Email WordPress semplici
-         */
-
-        if (
-            type === "wordpress" ||
-            type === "contact_form"
-        ) {
-            return "FIX";
-        }
-
-
-        /*
-         * WooCommerce email:
-         * possono essere semplici, ma se
-         * riguardano tutto il sistema
-         * preferiamo una valutazione.
-         */
-
-        if (
-            type === "woocommerce"
-        ) {
-            return "FIX";
-        }
-
-
-        /*
-         * Tutte le email + entrambi i versi
-         * è un problema più ampio.
-         */
-
-        if (
-            type === "all" &&
-            direction === "both"
-        ) {
-            return "COMPLEX";
-        }
-
-
-        /*
-         * Problema non determinabile
-         */
-
-        if (
-            type === "unknown" ||
-            direction === "unknown"
-        ) {
-            return "QUOTE";
-        }
-
-
-        return "FIX";
-    }
-
-
-    /* -------------------------------------------------
-       FUNZIONALITÀ / ELEMENTI
-       ------------------------------------------------- */
-
-    if (resultId === "SMART_FUNCTION") {
-
-        const problem =
-            caseData.functionProblem;
-
-        const scope =
-            caseData.functionScope;
-
-        const change =
-            caseData.functionChange;
-
-
-        /*
-         * WooCommerce viene trattato come
-         * intervento commerciale/tecnico.
-         */
-
-        if (
-            problem === "woocommerce"
-        ) {
-            return "COMPLEX";
-        }
-
-
-        /*
-         * Tutto il sito + modifica recente
-         */
-
-        if (
-            scope === "whole_site" &&
-            (
-                change === "wordpress_update" ||
-                change === "plugin_update" ||
-                change === "theme_update" ||
-                change === "installation"
-            )
-        ) {
-            return "COMPLEX";
-        }
-
-
-        /*
-         * Più pagine + aggiornamento
-         */
-
-        if (
-            scope === "multiple_pages" &&
-            (
-                change === "wordpress_update" ||
-                change === "plugin_update" ||
-                change === "theme_update"
-            )
-        ) {
-            return "COMPLEX";
-        }
-
-
-        /*
-         * Problema circoscritto
-         */
-
-        if (
-            scope === "one_page"
-        ) {
-            return "FIX";
-        }
-
-
-        return "FIX";
-    }
-
-
-    /*
-     * Se abbiamo già un risultato esplicito,
-     * lo manteniamo.
-     */
-
-    return resultId;
+    showResult(raw);
+  });
+
+  interactionLocked = false;
+  scrollToBottom();
 }
 
-
-/* =====================================================
+/* ======================================
    RISULTATO
-===================================================== */
+====================================== */
 
-async function showResult(resultId) {
+async function showResult(raw) {
 
-    interactionLocked = true;
+  if (resultShown) return;
 
-    showTyping();
+  resultShown = true;
+  interactionLocked = true;
 
-    await wait(850);
+  const stamp = session;
 
-    hideTyping();
+  setTyping(true);
+  await wait(400);
 
+  if (stamp !== session) return;
 
-    /*
-     * Risolviamo il risultato effettivo
-     * in base alle risposte raccolte.
-     */
+  setTyping(false);
 
-    const resolvedResultId =
-        resolveResult(resultId);
+  const key = resolveResult(raw);
+  const r = results[key];
 
+  if (!r) {
+    console.error('Risultato assente', key);
+    return;
+  }
 
-    const result =
-        results[resolvedResultId];
+  resultTier = key;
+  caseData.tier = key;
 
+  progressBar.style.width = '100%';
+  progressCount.textContent = 'Analisi completata';
 
-    if (!result) {
+  addMessage(
+    'Ho analizzato le informazioni che mi hai fornito.'
+  );
 
-        console.error(
-            "Risultato non trovato:",
-            resolvedResultId
-        );
+  resultBox.innerHTML = `
+    <div class="result-icon">
+      ${r.icon}
+    </div>
 
+    <div class="result-label">
+      ${escapeHtml(r.label)}
+    </div>
+
+    <h2>
+      ${escapeHtml(r.title)}
+    </h2>
+
+    <p class="result-description">
+      ${escapeHtml(r.description)}
+    </p>
+
+    <div class="result-price">
+      ${escapeHtml(r.price)}
+    </div>
+
+    <div class="result-meta">
+      ${escapeHtml(r.meta)}
+    </div>
+
+    <button
+      type="button"
+      id="result-button"
+      class="result-button"
+    >
+      ${escapeHtml(r.button)}
+    </button>
+  `;
+
+  resultBox.classList.remove('hidden');
+
+  // Ripristina il pulsante di riavvio.
+  restartContainer?.classList.remove('hidden');
+
+  document
+    .getElementById('result-button')
+    .addEventListener('click', () => {
+
+      if (key === 'OUT') {
+        showCaseSummary();
         return;
-    }
+      }
 
+      // Il form si apre SOLO dopo il clic.
 
-    progressBar.style.width = "100%";
+      contactForm.classList.remove('hidden');
 
-    progressCount.textContent =
-        "Analisi completata";
+      contactForm.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    });
 
-
-    addMessage(
-        "Ho analizzato le informazioni che mi hai fornito."
-    );
-
-
-    await wait(500);
-
-
-    resultBox.innerHTML = `
-
-        <div class="result-icon">
-            ${result.icon}
-        </div>
-
-        <div class="result-label">
-            ${result.label}
-        </div>
-
-        <h2>
-            ${result.title}
-        </h2>
-
-        <p class="result-description">
-            ${result.description}
-        </p>
-
-        <div class="result-price">
-            ${result.price}
-        </div>
-
-        <div class="result-price-label">
-            ${result.meta}
-        </div>
-
-        <button
-            id="result-button"
-            class="result-button primary"
-        >
-            ${result.button}
-        </button>
-
-    `;
-
-
-    resultBox.classList.remove("hidden");
-
-
-    await wait(500);
-
+  if (key === 'OUT') {
 
     addMessage(
-        "Se vuoi procedere, lasciaci i tuoi dati e prepariamo la richiesta."
+      'Puoi ricominciare la diagnosi oppure ' +
+      'visualizzare il riepilogo.'
     );
 
+  } else {
 
-    await wait(350);
+    addMessage(
+      'Il prezzo è indicativo e sarà confermato ' +
+      'dopo una valutazione. Se vuoi proseguire, ' +
+      'usa il pulsante nella scheda.'
+    );
+  }
 
-
-    contactForm.classList.remove("hidden");
-
-
-    const resultButton =
-        document.getElementById("result-button");
-
-
-    if (resultButton) {
-
-        resultButton.addEventListener(
-            "click",
-            () => {
-
-                contactForm.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center"
-                });
-
-            }
-        );
-
-    }
-
-
-    interactionLocked = false;
-
-    scrollToBottom();
+  interactionLocked = false;
+  scrollToBottom();
 }
 
+/* ======================================
+   RIEPILOGO DELLE RISPOSTE
+====================================== */
 
-/* =====================================================
-   FORM CONTATTO
-===================================================== */
+function caseRows() {
 
-submitContact.addEventListener(
-    "click",
-    () => {
+  const labels = {
+    mainProblem: 'Problema principale',
+    requestType: 'Tipo di richiesta',
 
-        const name =
-            document
-                .getElementById("name")
-                .value
-                .trim();
+    siteBehaviour: 'Comportamento del sito',
+    errorType: 'Errore',
+    recentChange: 'Modifica recente',
+    adminAccess: 'Accesso WordPress',
+    hostingAccess: 'Accesso hosting',
 
+    sitePartialProblem: 'Problema del sito',
+    partialScope: 'Estensione',
+    partialChange: 'Modifica precedente',
+    partialAdminAccess: 'Accesso WordPress',
 
-        const email =
-            document
-                .getElementById("email")
-                .value
-                .trim();
+    adminProblem: 'Problema di accesso',
+    publicSite: 'Sito pubblico',
+    adminChange: 'Modifica recente',
 
+    wooProblem: 'Problema WooCommerce',
+    wooDetail: 'Dettaglio WooCommerce',
+    wooUpdate: 'Aggiornamento WooCommerce',
+    wooAdminAccess: 'Accesso WordPress',
 
-        const website =
-            document
-                .getElementById("website")
-                .value
-                .trim();
+    slowArea: 'Zona lenta',
+    slowHistory: 'Storia lentezza',
+    slowChange: 'Modifica recente',
 
+    emailType: 'Tipo di email',
+    emailDirection: 'Problema di invio/ricezione',
+    emailChange: 'Modifica recente',
 
-        if (!name) {
+    functionProblem: 'Elemento interessato',
+    functionScope: 'Estensione',
+    imageBehavior: 'Problema grafico',
+    functionChange: 'Modifica recente',
+    functionAdminAccess: 'Accesso WordPress',
 
-            alert(
-                "Inserisci il tuo nome."
-            );
+    unknownBehaviour: 'Stato del sito',
+    unknownScope: 'Estensione',
+    unknownChange: 'Modifica recente',
+    unknownAdminAccess: 'Accesso WordPress',
 
-            return;
-        }
+    problemDetails: 'Descrizione aggiuntiva'
+  };
 
+  const valueLabels = {
+    yes: 'Sì',
+    no: 'No',
+    unknown: 'Non lo so',
+    wordpress_update: 'Aggiornamento WordPress',
+    plugin_update: 'Aggiornamento plugin',
+    theme_update: 'Aggiornamento tema',
+    site_change: 'Modifiche al sito',
+    one_page: 'Una pagina',
+    multiple_pages: 'Più pagine',
+    whole_site: 'Tutto il sito',
+    woocommerce: 'WooCommerce'
+  };
 
-        if (!email) {
+  // Recupera dalle domande le etichette
+  // leggibili delle risposte scelte.
 
-            alert(
-                "Inserisci la tua email."
-            );
+  const lookup = {};
 
-            return;
-        }
+  Object.values(questions).forEach(q => {
 
+    if (q.saveAs && q.options) {
 
-        if (!isValidEmail(email)) {
+      for (const o of q.options) {
 
-            alert(
-                "Inserisci un indirizzo email valido."
-            );
-
-            return;
-        }
-
-
-        if (!website) {
-
-            alert(
-                "Inserisci l'indirizzo del tuo sito."
-            );
-
-            return;
-        }
-
-
-        caseData.name = name;
-
-        caseData.email = email;
-
-        caseData.website = website;
-
-
-        contactForm.classList.add("hidden");
-
-
-        addMessage(
-            `Perfetto ${escapeHtml(name)} 👋`,
-            "bot"
-        );
-
-
-        setTimeout(() => {
-
-            addMessage(
-                "La tua richiesta è pronta per essere inviata."
-            );
-
-        }, 600);
-
-
-        setTimeout(() => {
-
-            showCaseSummary();
-
-        }, 1200);
-
+        lookup[q.saveAs + '|' + o.value] =
+          o.label
+            .replace(/^[^\p{L}\p{N}]+/u, '')
+            .trim();
+      }
     }
-);
+  });
 
+  return Object.entries(caseData)
 
-/* =====================================================
-   RIEPILOGO
-===================================================== */
+    .filter(([key]) => labels[key])
+
+    .map(([key, value]) => {
+
+      const readable =
+        lookup[key + '|' + value] ||
+        valueLabels[value] ||
+        value;
+
+      return `
+        <div
+          class="data-item"
+          style="margin-bottom:9px"
+        >
+
+          <span
+            style="
+              display:block;
+              color:#777;
+              font-size:11px;
+            "
+          >
+            ${escapeHtml(labels[key])}
+          </span>
+
+          <strong
+            style="
+              display:block;
+              font-size:13px;
+              white-space:pre-wrap;
+            "
+          >
+            ${escapeHtml(readable)}
+          </strong>
+
+        </div>
+      `;
+    })
+
+    .join('');
+}
+
+/* ======================================
+   MOSTRA RIEPILOGO
+====================================== */
 
 function showCaseSummary() {
 
-    const summary =
-        document.createElement("div");
+  if (summaryShown) return;
 
-    summary.className =
-        "case-summary";
+  summaryShown = true;
 
+  const div = document.createElement('div');
 
-    summary.innerHTML = `
+  div.className = 'case-summary';
 
-        <div class="summary-title">
-            📋 Riepilogo richiesta
-        </div>
+  div.style.cssText =
+    'background:#fafaf8;' +
+    'border:1px solid #e2e2dd;' +
+    'border-radius:16px;' +
+    'padding:22px;' +
+    'margin:0 0 18px';
 
-        <div class="summary-row">
+  const r = results[resultTier];
 
-            <span>
-                Nome
-            </span>
+  const contactInfo = caseData.name
+    ? `
+        <p>
+          ${escapeHtml(caseData.name)}
+          · ${escapeHtml(caseData.email)}
+          · ${escapeHtml(caseData.website)}
+        </p>
 
-            <strong>
-                ${escapeHtml(caseData.name)}
-            </strong>
+        <hr
+          style="
+            margin:12px 0;
+            border:0;
+            border-top:1px solid #e2e2dd;
+          "
+        >
+      `
+    : '';
 
-        </div>
+  div.innerHTML = `
 
-        <div class="summary-row">
+    <h3 style="margin-bottom:14px">
+      📋 Riepilogo della diagnosi
+    </h3>
 
-            <span>
-                Email
-            </span>
+    <p style="margin-bottom:14px">
+      <strong>
+        ${escapeHtml(r?.label || resultTier)}
+      </strong>
+      —
+      ${escapeHtml(r?.price || '')}
+    </p>
 
-            <strong>
-                ${escapeHtml(caseData.email)}
-            </strong>
+    ${contactInfo}
 
-        </div>
+    ${caseRows()}
 
-        <div class="summary-row">
+    <p
+      style="
+        margin-top:14px;
+        font-size:11px;
+        color:#777;
+      "
+    >
+      Anteprima locale: nessun dato è stato
+      inviato o salvato su un server.
+    </p>
+  `;
 
-            <span>
-                Sito
-            </span>
-
-            <strong>
-                ${escapeHtml(caseData.website)}
-            </strong>
-
-        </div>
-
-        <div class="summary-divider">
-        </div>
-
-        <div class="summary-data">
-
-            ${formatCaseData()}
-
-        </div>
-
-    `;
-
-
-    chat.appendChild(summary);
-
-    scrollToBottom();
+  chat.appendChild(div);
+  scrollToBottom();
 }
 
+/* ======================================
+   FORM CONTATTI — SOLO SIMULAZIONE MVP
+====================================== */
 
-/* =====================================================
-   FORMAT DATI
-===================================================== */
+submitContact?.addEventListener('click', () => {
 
-function formatCaseData() {
+  const name = document
+    .getElementById('name')
+    .value
+    .trim();
 
-    const labels = {
+  const email = document
+    .getElementById('email')
+    .value
+    .trim();
 
-        mainProblem:
-            "Problema principale",
+  const website = document
+    .getElementById('website')
+    .value
+    .trim();
 
-        siteBehaviour:
-            "Comportamento del sito",
+  if (!name) {
+    alert('Inserisci il nome.');
+    return;
+  }
 
-        errorType:
-            "Errore",
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  ) {
+    alert('Inserisci un indirizzo email valido.');
+    return;
+  }
 
-        recentChange:
-            "Modifica recente",
+  if (
+    !/^https?:\/\/[^\s.]+(?:\.[^\s]+)+/i.test(website)
+  ) {
+    alert(
+      'Inserisci un URL completo, ' +
+      'ad esempio https://iltuosito.it'
+    );
+    return;
+  }
 
-        adminAccess:
-            "Accesso WordPress",
+  Object.assign(caseData, {
+    name,
+    email,
+    website
+  });
 
-        hostingAccess:
-            "Accesso hosting",
+  contactForm.classList.add('hidden');
 
-        adminProblem:
-            "Problema WordPress",
+  addMessage(
+    'Riepilogo pronto. Questa è una simulazione: ' +
+    'la richiesta non è ancora inviata.'
+  );
 
-        publicSite:
-            "Sito pubblico",
+  showCaseSummary();
+});
 
-        adminChange:
-            "Modifica recente",
+/* ======================================
+   RICOMINCIA LA DIAGNOSI
+====================================== */
 
-        wooProblem:
-            "Problema WooCommerce",
+function restart() {
 
-        wooUpdate:
-            "Aggiornamento WooCommerce",
+  // Invalida eventuali animazioni
+  // e operazioni asincrone precedenti.
 
-        wooAdminAccess:
-            "Accesso WordPress",
+  session++;
 
-        sitePartialProblem:
-            "Problema del sito",
+  caseData = {};
+  currentQuestion = 'start';
+  questionCount = 0;
+  interactionLocked = true;
 
-        partialScope:
-            "Ambito",
+  resultShown = false;
+  resultTier = '';
+  summaryShown = false;
 
-        partialChange:
-            "Modifica recente",
+  chat.innerHTML = '';
+  options.innerHTML = '';
+  resultBox.innerHTML = '';
 
-        slowArea:
-            "Area lenta",
+  resultBox.classList.add('hidden');
+  contactForm.classList.add('hidden');
 
-        slowHistory:
-            "Storia lentezza",
+  restartContainer?.classList.add('hidden');
 
-        slowChange:
-            "Modifica recente",
+  const name = document.getElementById('name');
+  const email = document.getElementById('email');
+  const website = document.getElementById('website');
 
-        emailType:
-            "Tipo email",
+  if (name) name.value = '';
+  if (email) email.value = '';
+  if (website) website.value = '';
 
-        emailDirection:
-            "Direzione email",
+  setTyping(false);
 
-        emailChange:
-            "Modifica email",
+  progressBar.style.width = '0%';
+  progressCount.textContent = '';
 
-        functionProblem:
-            "Elemento non funzionante",
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
 
-        functionScope:
-            "Ambito",
-
-        imageBehavior:
-            "Problema elemento grafico",
-
-        functionChange:
-            "Modifica recente",
-
-        functionAdminAccess:
-            "Accesso WordPress",
-
-        unknownBehaviour:
-            "Comportamento del sito",
-
-        unknownScope:
-            "Ambito",
-
-        unknownChange:
-            "Modifica recente",
-
-        unknownAdminAccess:
-            "Accesso WordPress"
-
-    };
-
-
-    return Object.entries(caseData)
-
-        .filter(
-            ([key]) =>
-                labels[key]
-        )
-
-        .map(
-            ([key, value]) => `
-
-                <div class="data-item">
-
-                    <span>
-                        ${labels[key]}
-                    </span>
-
-                    <strong>
-                        ${escapeHtml(
-                            formatValue(value)
-                        )}
-                    </strong>
-
-                </div>
-
-            `
-        )
-
-        .join("");
+  showQuestion('start');
 }
 
+/* EVENTO DEL PULSANTE RICOMINCIA */
 
-/* =====================================================
-   FORMAT VALORI
-===================================================== */
+restartButton?.addEventListener('click', restart);
 
-function formatValue(value) {
+/* AVVIO DELLA CHAT */
 
-    const map = {
-
-        yes:
-            "Sì",
-
-        no:
-            "No",
-
-        unknown:
-            "Non lo so",
-
-        plugin_update:
-            "Aggiornamento plugin",
-
-        wordpress_update:
-            "Aggiornamento WordPress",
-
-        theme_update:
-            "Aggiornamento tema",
-
-        installation:
-            "Installazione",
-
-        nothing:
-            "Nessuna modifica",
-
-        update:
-            "Aggiornamento",
-
-        change:
-            "Modifica",
-
-        page_change:
-            "Modifica della pagina",
-
-        one_page:
-            "Una sola pagina",
-
-        multiple_pages:
-            "Più pagine",
-
-        whole_site:
-            "Tutto il sito",
-
-        not_visible:
-            "Non viene visualizzata",
-
-        broken:
-            "Immagine rotta / errore",
-
-        missing:
-            "Elemento sparito",
-
-        display:
-            "Visualizzazione errata",
-
-        checkout:
-            "Checkout / pagamento",
-
-        cart:
-            "Carrello",
-
-        orders:
-            "Ordini",
-
-        products:
-            "Prezzi / prodotti",
-
-        emails:
-            "Email WooCommerce",
-
-        woocommerce:
-            "WooCommerce",
-
-        wordpress:
-            "Email WordPress",
-
-        contact_form:
-            "Form di contatto",
-
-        sending:
-            "Invio",
-
-        receiving:
-            "Ricezione",
-
-        both:
-            "Invio e ricezione",
-
-        error:
-            "Errore",
-
-        500:
-            "500 / Internal Server Error",
-
-        database:
-            "Database connection error",
-
-        403:
-            "403 / Access denied",
-
-        404:
-            "404 / Page not found"
-
-    };
-
-
-    return map[value] || value;
-}
-
-
-/* =====================================================
-   UTILITY
-===================================================== */
-
-function isValidEmail(email) {
-
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-}
-
-
-function escapeHtml(text) {
-
-    const div =
-        document.createElement("div");
-
-    div.textContent = text;
-
-    return div.innerHTML;
-
-}
-
-
-function scrollToBottom() {
-
-    setTimeout(() => {
-
-        window.scrollTo({
-
-            top:
-                document.body.scrollHeight,
-
-            behavior:
-                "smooth"
-
-        });
-
-    }, 50);
-
-}
-
-
-/* =====================================================
-   AVVIO
-===================================================== */
-
-setTimeout(() => {
-
-    showQuestion("start");
-
-}, 400);
+showQuestion('start');
