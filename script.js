@@ -1,7 +1,3 @@
-/* =====================================================
-   ELEMENTI DOM
-===================================================== */
-
 const chat = document.getElementById("chat");
 const options = document.getElementById("options");
 const typing = document.getElementById("typing");
@@ -14,6 +10,12 @@ const progressCount = document.getElementById("progress-count");
 
 const submitContact = document.getElementById("submit-contact");
 
+const restartContainer =
+    document.getElementById("restart-container");
+
+const restartButton =
+    document.getElementById("restart-button");
+
 
 /* =====================================================
    STATO
@@ -22,25 +24,8 @@ const submitContact = document.getElementById("submit-contact");
 const caseData = {};
 
 let currentQuestion = "start";
-
 let questionCount = 0;
-
 let interactionLocked = false;
-
-
-/* =====================================================
-   AVVIO
-===================================================== */
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    setTimeout(() => {
-
-        showQuestion("start");
-
-    }, 400);
-
-});
 
 
 /* =====================================================
@@ -55,9 +40,13 @@ function addMessage(text, type = "bot") {
     message.className =
         `message ${type}`;
 
-    message.textContent = text;
+    message.innerHTML = text;
 
     chat.appendChild(message);
+
+    requestAnimationFrame(() => {
+        message.classList.add("visible");
+    });
 
     scrollToBottom();
 }
@@ -65,7 +54,10 @@ function addMessage(text, type = "bot") {
 
 function addUserMessage(text) {
 
-    addMessage(text, "user");
+    addMessage(
+        text,
+        "user"
+    );
 
 }
 
@@ -79,7 +71,6 @@ function showTyping() {
     typing.classList.remove("hidden");
 
     scrollToBottom();
-
 }
 
 
@@ -89,10 +80,6 @@ function hideTyping() {
 
 }
 
-
-/* =====================================================
-   UTILITY WAIT
-===================================================== */
 
 function wait(ms) {
 
@@ -114,12 +101,7 @@ function updateProgress() {
     questionCount++;
 
     progressCount.textContent =
-        `${questionCount} ${
-            questionCount === 1
-                ? "informazione"
-                : "informazioni"
-        } raccolte`;
-
+        `${questionCount} ${questionCount === 1 ? "informazione" : "informazioni"} raccolte`;
 
     const width =
         Math.min(
@@ -127,10 +109,8 @@ function updateProgress() {
             92
         );
 
-
     progressBar.style.width =
         `${width}%`;
-
 }
 
 
@@ -143,49 +123,37 @@ async function showQuestion(id) {
     const question =
         questions[id];
 
-
     if (!question) {
 
         console.error(
-            "Nodo domanda non trovato:",
+            "Nodo non trovato:",
             id
         );
 
         interactionLocked = false;
 
         return;
-
     }
-
 
     currentQuestion = id;
 
     interactionLocked = true;
 
 
-    /* ---------------------------------------------
+    /* =================================================
        RISULTATO DIRETTO
-    --------------------------------------------- */
+    ================================================= */
 
     if (question.result) {
 
-        await showResult(question.result);
+        showResult(question.result);
 
         return;
-
     }
 
 
-    /* ---------------------------------------------
-       PROGRESS
-    --------------------------------------------- */
-
     updateProgress();
 
-
-    /* ---------------------------------------------
-       TYPING
-    --------------------------------------------- */
 
     showTyping();
 
@@ -194,16 +162,14 @@ async function showQuestion(id) {
     hideTyping();
 
 
-    /* ---------------------------------------------
-       MESSAGGIO
-    --------------------------------------------- */
-
-    addMessage(question.text);
+    addMessage(
+        question.text
+    );
 
 
-    /* ---------------------------------------------
-       NODO INTRODUTTIVO
-    --------------------------------------------- */
+    /*
+     * Domanda introduttiva senza risposte.
+     */
 
     if (
         question.next &&
@@ -212,43 +178,34 @@ async function showQuestion(id) {
 
         await wait(350);
 
-        showQuestion(question.next);
+        showQuestion(
+            question.next
+        );
 
         return;
-
     }
 
 
-    /* ---------------------------------------------
-       OPZIONI
-    --------------------------------------------- */
-
     await wait(300);
 
-    renderOptions(question.options);
+
+    renderOptions(
+        question.options
+    );
 
     interactionLocked = false;
-
 }
 
 
 /* =====================================================
-   RENDER OPZIONI
+   OPZIONI
 ===================================================== */
 
 function renderOptions(questionOptions) {
 
     options.innerHTML = "";
 
-
-    if (
-        !questionOptions ||
-        !questionOptions.length
-    ) {
-
-        return;
-
-    }
+    options.classList.remove("show");
 
 
     questionOptions.forEach(
@@ -257,14 +214,11 @@ function renderOptions(questionOptions) {
             const button =
                 document.createElement("button");
 
-
-            button.type = "button";
-
-            button.className = "option";
+            button.className =
+                "option";
 
             button.textContent =
                 option.label;
-
 
             button.style.animationDelay =
                 `${index * 60}ms`;
@@ -274,38 +228,59 @@ function renderOptions(questionOptions) {
                 "click",
                 () => {
 
-                    handleAnswer(option);
+                    if (
+                        interactionLocked
+                    ) {
+                        return;
+                    }
+
+                    handleAnswer(
+                        option
+                    );
 
                 }
             );
 
 
-            options.appendChild(button);
+            options.appendChild(
+                button
+            );
 
         }
     );
 
 
-    scrollToBottom();
+    requestAnimationFrame(() => {
 
+        options.classList.add(
+            "show"
+        );
+
+    });
+
+
+    scrollToBottom();
 }
 
 
 /* =====================================================
-   GESTIONE RISPOSTA
+   RISPOSTA
 ===================================================== */
 
 async function handleAnswer(option) {
 
     if (interactionLocked) {
-
         return;
-
     }
-
 
     interactionLocked = true;
 
+
+    options.classList.remove(
+        "show"
+    );
+
+    await wait(120);
 
     options.innerHTML = "";
 
@@ -319,16 +294,14 @@ async function handleAnswer(option) {
         questions[currentQuestion];
 
 
-    /* ---------------------------------------------
-       SALVATAGGIO RISPOSTA
-    --------------------------------------------- */
-
     if (
         question &&
         question.saveAs
     ) {
 
-        caseData[question.saveAs] =
+        caseData[
+            question.saveAs
+        ] =
             option.value;
 
     }
@@ -337,36 +310,29 @@ async function handleAnswer(option) {
     await wait(400);
 
 
-    /* ---------------------------------------------
-       RISULTATO
-    --------------------------------------------- */
-
     if (option.result) {
 
-        await showResult(option.result);
+        showResult(
+            option.result
+        );
 
         return;
-
     }
 
-
-    /* ---------------------------------------------
-       PROSSIMA DOMANDA
-    --------------------------------------------- */
 
     if (option.next) {
 
         await wait(250);
 
-        showQuestion(option.next);
+        showQuestion(
+            option.next
+        );
 
         return;
-
     }
 
 
     interactionLocked = false;
-
 }
 
 
@@ -377,7 +343,6 @@ async function handleAnswer(option) {
 async function showResult(resultId) {
 
     interactionLocked = true;
-
 
     showTyping();
 
@@ -400,25 +365,15 @@ async function showResult(resultId) {
         interactionLocked = false;
 
         return;
-
     }
 
-
-    /* ---------------------------------------------
-       PROGRESS COMPLETO
-    --------------------------------------------- */
 
     progressBar.style.width =
         "100%";
 
-
     progressCount.textContent =
         "Analisi completata";
 
-
-    /* ---------------------------------------------
-       MESSAGGIO
-    --------------------------------------------- */
 
     addMessage(
         "Ho analizzato le informazioni che mi hai fornito."
@@ -427,10 +382,6 @@ async function showResult(resultId) {
 
     await wait(500);
 
-
-    /* ---------------------------------------------
-       RISULTATO
-    --------------------------------------------- */
 
     resultBox.innerHTML = `
 
@@ -454,13 +405,13 @@ async function showResult(resultId) {
             ${result.price}
         </div>
 
-        <div class="result-price-label">
+        <div class="result-meta">
             ${result.meta}
         </div>
 
         <button
             id="result-button"
-            class="result-button primary"
+            class="result-button"
             type="button"
         >
             ${result.button}
@@ -477,10 +428,6 @@ async function showResult(resultId) {
     await wait(500);
 
 
-    /* ---------------------------------------------
-       INVITO AL FORM
-    --------------------------------------------- */
-
     addMessage(
         "Se vuoi procedere, lasciaci i tuoi dati e prepariamo la richiesta."
     );
@@ -494,9 +441,15 @@ async function showResult(resultId) {
     );
 
 
-    /* ---------------------------------------------
-       BUTTON RISULTATO
-    --------------------------------------------- */
+    /*
+     * Mostriamo anche il pulsante
+     * per ricominciare la diagnosi.
+     */
+
+    restartContainer.classList.remove(
+        "hidden"
+    );
+
 
     const resultButton =
         document.getElementById(
@@ -524,7 +477,6 @@ async function showResult(resultId) {
     interactionLocked = false;
 
     scrollToBottom();
-
 }
 
 
@@ -534,148 +486,107 @@ async function showResult(resultId) {
 
 submitContact.addEventListener(
     "click",
-    handleContactSubmit
-);
+    () => {
+
+        const name =
+            document
+                .getElementById("name")
+                .value
+                .trim();
 
 
-function handleContactSubmit() {
-
-    const nameInput =
-        document.getElementById("name");
-
-
-    const emailInput =
-        document.getElementById("email");
+        const email =
+            document
+                .getElementById("email")
+                .value
+                .trim();
 
 
-    const websiteInput =
-        document.getElementById("website");
+        const website =
+            document
+                .getElementById("website")
+                .value
+                .trim();
 
 
-    const name =
-        nameInput.value.trim();
+        if (!name) {
+
+            alert(
+                "Inserisci il tuo nome."
+            );
+
+            return;
+        }
 
 
-    const email =
-        emailInput.value.trim();
+        if (!email) {
+
+            alert(
+                "Inserisci la tua email."
+            );
+
+            return;
+        }
 
 
-    const website =
-        websiteInput.value.trim();
+        if (!isValidEmail(email)) {
+
+            alert(
+                "Inserisci un indirizzo email valido."
+            );
+
+            return;
+        }
 
 
-    /* ---------------------------------------------
-       VALIDAZIONE NOME
-    --------------------------------------------- */
+        if (!website) {
 
-    if (!name) {
+            alert(
+                "Inserisci l'indirizzo del tuo sito."
+            );
 
-        alert(
-            "Inserisci il tuo nome."
+            return;
+        }
+
+
+        caseData.name =
+            name;
+
+        caseData.email =
+            email;
+
+        caseData.website =
+            website;
+
+
+        contactForm.classList.add(
+            "hidden"
         );
 
-        nameInput.focus();
-
-        return;
-
-    }
-
-
-    /* ---------------------------------------------
-       VALIDAZIONE EMAIL
-    --------------------------------------------- */
-
-    if (!email) {
-
-        alert(
-            "Inserisci la tua email."
-        );
-
-        emailInput.focus();
-
-        return;
-
-    }
-
-
-    if (!isValidEmail(email)) {
-
-        alert(
-            "Inserisci un indirizzo email valido."
-        );
-
-        emailInput.focus();
-
-        return;
-
-    }
-
-
-    /* ---------------------------------------------
-       VALIDAZIONE SITO
-    --------------------------------------------- */
-
-    if (!website) {
-
-        alert(
-            "Inserisci l'indirizzo del tuo sito."
-        );
-
-        websiteInput.focus();
-
-        return;
-
-    }
-
-
-    /* ---------------------------------------------
-       SALVATAGGIO
-    --------------------------------------------- */
-
-    caseData.name =
-        name;
-
-    caseData.email =
-        email;
-
-    caseData.website =
-        website;
-
-
-    /* ---------------------------------------------
-       NASCONDI FORM
-    --------------------------------------------- */
-
-    contactForm.classList.add(
-        "hidden"
-    );
-
-
-    /* ---------------------------------------------
-       CONFERMA
-    --------------------------------------------- */
-
-    addMessage(
-        `Perfetto ${name} 👋`
-    );
-
-
-    setTimeout(() => {
 
         addMessage(
-            "La tua richiesta è pronta per essere inviata."
+            `Perfetto ${escapeHtml(name)} 👋`,
+            "bot"
         );
 
-    }, 600);
+
+        setTimeout(() => {
+
+            addMessage(
+                "La tua richiesta è pronta per essere inviata."
+            );
+
+        }, 600);
 
 
-    setTimeout(() => {
+        setTimeout(() => {
 
-        showCaseSummary();
+            showCaseSummary();
 
-    }, 1200);
+        }, 1200);
 
-}
+    }
+);
 
 
 /* =====================================================
@@ -686,7 +597,6 @@ function showCaseSummary() {
 
     const summary =
         document.createElement("div");
-
 
     summary.className =
         "case-summary";
@@ -734,7 +644,8 @@ function showCaseSummary() {
 
         </div>
 
-        <div class="summary-divider"></div>
+        <div class="summary-divider">
+        </div>
 
         <div class="summary-data">
 
@@ -745,10 +656,11 @@ function showCaseSummary() {
     `;
 
 
-    chat.appendChild(summary);
+    chat.appendChild(
+        summary
+    );
 
     scrollToBottom();
-
 }
 
 
@@ -881,7 +793,6 @@ function formatCaseData() {
         )
 
         .join("");
-
 }
 
 
@@ -945,102 +856,142 @@ function formatValue(value) {
             "Elemento sparito",
 
         display:
-            "Visualizzazione errata",
-
-        error:
-            "Errore",
-
-        white_screen:
-            "Schermata bianca",
-
-        error_page:
-            "Pagina di errore",
-
-        partially_working:
-            "Parzialmente funzionante",
-
-        500:
-            "Errore 500",
-
-        database:
-            "Errore database",
-
-        403:
-            "Errore 403",
-
-        404:
-            "Errore 404",
-
-        password:
-            "Password non accettata",
-
-        login_page:
-            "Pagina login non disponibile",
-
-        login_loop:
-            "Loop di login",
-
-        cart:
-            "Carrello",
-
-        checkout:
-            "Checkout / pagamento",
-
-        orders:
-            "Ordini",
-
-        products:
-            "Prezzi / prodotti",
-
-        emails:
-            "Email ordini",
-
-        contact_form:
-            "Form di contatto",
-
-        sending:
-            "Invio",
-
-        receiving:
-            "Ricezione",
-
-        both:
-            "Invio e ricezione",
-
-        always:
-            "Sempre stato lento",
-
-        recent:
-            "Peggiorato recentemente",
-
-        suddenly:
-            "Diventato lento improvvisamente",
-
-        pages:
-            "Alcune pagine",
-
-        admin:
-            "Area amministrazione",
-
-        normal:
-            "Funziona normalmente",
-
-        strange:
-            "Comportamento anomalo",
-
-        down:
-            "Non si apre"
+            "Visualizzazione errata"
 
     };
 
 
     return map[value] || value;
-
 }
 
 
 /* =====================================================
-   VALIDAZIONE EMAIL
+   RESTART
+===================================================== */
+
+restartButton.addEventListener(
+    "click",
+    async () => {
+
+        /*
+         * Blocchiamo temporaneamente
+         * l'interazione mentre resettiamo.
+         */
+
+        interactionLocked = true;
+
+
+        /*
+         * Pulizia completa dei dati.
+         */
+
+        Object.keys(caseData).forEach(
+            key => {
+                delete caseData[key];
+            }
+        );
+
+
+        /*
+         * Reset stato.
+         */
+
+        currentQuestion =
+            "start";
+
+        questionCount =
+            0;
+
+
+        /*
+         * Pulizia interfaccia.
+         */
+
+        chat.innerHTML = "";
+
+        options.innerHTML = "";
+
+        resultBox.innerHTML = "";
+
+        resultBox.classList.add(
+            "hidden"
+        );
+
+        contactForm.classList.add(
+            "hidden"
+        );
+
+        restartContainer.classList.add(
+            "hidden"
+        );
+
+        hideTyping();
+
+
+        /*
+         * Reset form.
+         */
+
+        document
+            .getElementById("name")
+            .value = "";
+
+        document
+            .getElementById("email")
+            .value = "";
+
+        document
+            .getElementById("website")
+            .value = "";
+
+
+        /*
+         * Reset progress bar.
+         */
+
+        progressBar.style.width =
+            "0%";
+
+        progressCount.textContent =
+            "";
+
+
+        /*
+         * Torniamo in cima.
+         */
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+
+
+        /*
+         * Piccola pausa per rendere
+         * il restart più naturale.
+         */
+
+        await wait(300);
+
+
+        interactionLocked =
+            false;
+
+
+        /*
+         * Riparte la diagnosi.
+         */
+
+        showQuestion(
+            "start"
+        );
+
+    }
+);
+
+
+/* =====================================================
+   UTILITY
 ===================================================== */
 
 function isValidEmail(email) {
@@ -1052,28 +1003,18 @@ function isValidEmail(email) {
 }
 
 
-/* =====================================================
-   ESCAPE HTML
-===================================================== */
-
 function escapeHtml(text) {
 
     const div =
         document.createElement("div");
 
-
     div.textContent =
         text;
-
 
     return div.innerHTML;
 
 }
 
-
-/* =====================================================
-   SCROLL
-===================================================== */
 
 function scrollToBottom() {
 
@@ -1092,3 +1033,16 @@ function scrollToBottom() {
     }, 50);
 
 }
+
+
+/* =====================================================
+   AVVIO
+===================================================== */
+
+setTimeout(() => {
+
+    showQuestion(
+        "start"
+    );
+
+}, 400);
