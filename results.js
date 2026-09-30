@@ -1,10 +1,7 @@
-/* =====================================================
-   RISULTATI DIAGNOSI
-===================================================== */
-
 const results = {
 
     FIX: {
+
         icon: "🔧",
 
         label: "FIX STANDARD",
@@ -19,10 +16,12 @@ const results = {
         meta: "Diagnosi + intervento + test",
 
         button: "Voglio risolverlo"
+
     },
 
 
     COMPLEX: {
+
         icon: "🟠",
 
         label: "POSSIBILE FIX COMPLESSO",
@@ -37,10 +36,12 @@ const results = {
         meta: "Stima preliminare",
 
         button: "Richiedi la valutazione"
+
     },
 
 
     QUOTE: {
+
         icon: "📋",
 
         label: "PREVENTIVO",
@@ -55,10 +56,12 @@ const results = {
         meta: "Valutazione personalizzata",
 
         button: "Ricevi il preventivo"
+
     },
 
 
     OUT: {
+
         icon: "🚫",
 
         label: "FUORI SCOPE",
@@ -73,6 +76,7 @@ const results = {
         meta: "Valutazione manuale",
 
         button: "Invia il problema"
+
     }
 
 };
