@@ -16,7 +16,6 @@
 
         <div class="chat-window">
 
-            <!-- HEADER -->
             <header class="chat-header">
 
                 <div class="logo">🔧</div>
@@ -34,17 +33,11 @@
             </header>
 
 
-            <!-- PROGRESS -->
-            <div class="progress-container">
+            <div class="progress-area">
 
-                <div class="progress-info">
-
-                    <span id="progress-text">
-                        Analisi del problema
-                    </span>
-
+                <div class="progress-label">
+                    <span id="progress-text">Analisi del problema</span>
                     <span id="progress-count"></span>
-
                 </div>
 
                 <div class="progress-track">
@@ -54,93 +47,68 @@
             </div>
 
 
-            <!-- CHAT -->
             <div id="chat" class="chat"></div>
 
 
-            <!-- TYPING -->
             <div id="typing" class="typing hidden">
-
                 <span></span>
                 <span></span>
                 <span></span>
-
             </div>
 
 
-            <!-- OPTIONS -->
             <div id="options" class="options"></div>
 
 
-            <!-- RESULT -->
             <div id="result" class="result hidden"></div>
 
 
-            <!-- CONTACT FORM -->
             <div id="contact-form" class="contact-form hidden">
 
                 <div class="form-intro">
 
-                    <div class="form-icon">
-                        ✉️
-                    </div>
+                    <div class="form-icon">✉️</div>
 
                     <div>
-
-                        <h2>
-                            Procediamo?
-                        </h2>
+                        <h2>Procediamo?</h2>
 
                         <p>
                             Inserisci i tuoi dati per ricevere
                             il riepilogo e procedere con la richiesta.
                         </p>
-
                     </div>
 
                 </div>
 
 
-                <label for="name">
-                    Nome
-                </label>
+                <label for="name">Nome</label>
 
                 <input
                     id="name"
                     type="text"
                     placeholder="Il tuo nome"
-                    autocomplete="name"
                 >
 
 
-                <label for="email">
-                    Email
-                </label>
+                <label for="email">Email</label>
 
                 <input
                     id="email"
                     type="email"
                     placeholder="nome@email.it"
-                    autocomplete="email"
                 >
 
 
-                <label for="website">
-                    Sito web
-                </label>
+                <label for="website">Sito web</label>
 
                 <input
                     id="website"
                     type="url"
                     placeholder="https://iltuosito.it"
-                    autocomplete="url"
                 >
 
 
-                <button
-                    id="submit-contact"
-                    type="button"
-                >
+                <button id="submit-contact">
                     Continua →
                 </button>
 
@@ -151,21 +119,27 @@
 
             </div>
 
+
+            <!-- =========================================
+                 RESTART
+            ========================================== -->
+
+            <div id="restart-container" class="restart-container hidden">
+
+                <button
+                    id="restart-button"
+                    class="restart-button"
+                    type="button"
+                >
+                    ↻ Ricomincia la diagnosi
+                </button>
+
+            </div>
+
         </div>
 
     </main>
 
-
-    <!--
-        ORDINE IMPORTANTE:
-
-        1. questions.js
-        2. results.js
-        3. script.js
-
-        script.js usa questions e results,
-        quindi devono essere caricati prima.
-    -->
 
     <script src="questions.js"></script>
     <script src="results.js"></script>
