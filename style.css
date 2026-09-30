@@ -4,441 +4,421 @@
     padding: 0;
 }
 
+:root {
+    --bg: #f3f3ef;
+    --card: #ffffff;
+    --text: #171717;
+    --muted: #777;
+    --border: #e5e5e1;
+    --soft: #f5f5f2;
+    --dark: #111111;
+    --green: #35a46f;
+    --orange: #e49a35;
+    --blue: #5684d8;
+    --red: #d96868;
+}
+
+html {
+    scroll-behavior: smooth;
+}
 
 body {
+    min-height: 100vh;
 
     font-family:
-        Inter,
         -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
+        Roboto,
+        Helvetica,
         Arial,
         sans-serif;
 
     background:
         radial-gradient(
             circle at top,
-            #ffffff 0%,
-            #f3f3ef 65%
+            #ffffff 0,
+            #f3f3ef 45%,
+            #ecece7 100%
         );
 
-    color: #151515;
+    color: var(--text);
 
+    -webkit-font-smoothing: antialiased;
 }
 
 
-/* =========================================
+/* ==================================================
    APP
-========================================= */
+================================================== */
 
 .app {
-
+    width: 100%;
     min-height: 100vh;
 
     display: flex;
-
     justify-content: center;
+    align-items: flex-start;
 
-    align-items: center;
-
-    padding: 30px 20px;
-
+    padding: 40px 20px 60px;
 }
 
 
-/* =========================================
-   CHAT
-========================================= */
+/* ==================================================
+   CHAT WINDOW
+================================================== */
 
 .chat-window {
-
     width: 100%;
-
     max-width: 680px;
 
-    background: white;
+    background: var(--card);
+
+    border: 1px solid rgba(0, 0, 0, .06);
 
     border-radius: 24px;
 
     overflow: hidden;
 
-    border:
-        1px solid #e9e9e9;
-
     box-shadow:
-        0 30px 80px
-        rgba(0,0,0,.10);
-
+        0 20px 60px rgba(0, 0, 0, .08),
+        0 4px 15px rgba(0, 0, 0, .04);
 }
 
 
-/* =========================================
+/* ==================================================
    HEADER
-========================================= */
+================================================== */
 
 .chat-header {
-
     display: flex;
-
     align-items: center;
-
-    gap: 12px;
 
     padding: 20px 24px;
 
     border-bottom:
-        1px solid #eeeeee;
+        1px solid var(--border);
 
+    background: #fff;
 }
 
-
 .logo {
-
     width: 44px;
     height: 44px;
 
     display: flex;
-
+    align-items: center;
     justify-content: center;
 
-    align-items: center;
+    flex-shrink: 0;
 
-    border-radius: 12px;
+    background: #f1f1ed;
 
-    background: #111;
-
-    color: white;
+    border-radius: 13px;
 
     font-size: 21px;
-
 }
 
+.brand {
+    margin-left: 13px;
+}
 
 .brand h1 {
+    font-size: 16px;
 
-    font-size: 17px;
+    line-height: 1.2;
 
-    margin-bottom: 3px;
+    font-weight: 700;
 
+    letter-spacing: -.02em;
 }
-
 
 .brand p {
-
-    font-size: 13px;
-
-    color: #777;
-
-}
-
-
-.status {
-
-    margin-left: auto;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 6px;
-
-    font-size: 12px;
-
-    color: #777;
-
-}
-
-
-.status span {
-
-    width: 7px;
-    height: 7px;
-
-    border-radius: 50%;
-
-    background: #31c48d;
-
-    box-shadow:
-        0 0 0 4px
-        rgba(49,196,141,.12);
-
-}
-
-
-/* =========================================
-   PROGRESS
-========================================= */
-
-.progress-area {
-
-    padding:
-        12px 24px 10px;
-
-    background: #fff;
-
-}
-
-
-.progress-label {
-
-    display: flex;
-
-    justify-content: space-between;
-
-    margin-bottom: 7px;
-
-    color: #999;
+    margin-top: 3px;
 
     font-size: 11px;
 
+    color: var(--muted);
+}
+
+.status {
+    margin-left: auto;
+
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    font-size: 11px;
+
+    color: #777;
+}
+
+.status span {
+    width: 7px;
+    height: 7px;
+
+    display: block;
+
+    border-radius: 50%;
+
+    background: var(--green);
+
+    box-shadow:
+        0 0 0 3px rgba(53, 164, 111, .12);
+
+    animation: statusPulse 2s infinite;
+}
+
+@keyframes statusPulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: .45;
+    }
 }
 
 
+/* ==================================================
+   PROGRESS
+================================================== */
+
+.progress-container {
+    padding: 12px 24px 13px;
+
+    background: #fff;
+
+    border-bottom:
+        1px solid #f0f0ed;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 7px;
+
+    font-size: 10px;
+
+    color: #999;
+}
+
+#progress-label {
+    font-weight: 500;
+}
+
+#progress-count {
+    color: #aaa;
+}
+
 .progress-track {
-
     width: 100%;
-
-    height: 4px;
-
-    border-radius: 10px;
-
-    background: #eeeeee;
+    height: 3px;
 
     overflow: hidden;
 
+    background: #eeeeeb;
+
+    border-radius: 10px;
 }
 
-
-#progress-bar {
-
-    width: 5%;
-
+#progress {
+    width: 0;
     height: 100%;
+
+    background: var(--dark);
 
     border-radius: 10px;
 
-    background: #111;
-
     transition:
-        width .5s ease;
-
+        width .55s cubic-bezier(.4, 0, .2, 1);
 }
 
 
-/* =========================================
+/* ==================================================
    CHAT
-========================================= */
+================================================== */
 
 .chat {
+    padding: 28px 24px 8px;
 
-    padding:
-        26px 24px 10px;
+    display: flex;
+    flex-direction: column;
 
+    gap: 12px;
 }
 
 
+/* ==================================================
+   MESSAGES
+================================================== */
+
 .message {
+    max-width: 82%;
 
-    width: fit-content;
+    padding: 13px 16px;
 
-    max-width: 85%;
-
-    padding:
-        14px 17px;
-
-    margin-bottom: 13px;
-
-    border-radius: 17px;
-
-    font-size: 15px;
+    font-size: 14px;
 
     line-height: 1.5;
 
-    opacity: 0;
+    border-radius: 17px;
 
-    transform:
-        translateY(10px)
-        scale(.98);
-
-    transition:
-        opacity .3s ease,
-        transform .3s ease;
-
+    animation:
+        messageAppear
+        .35s
+        cubic-bezier(.2, .8, .2, 1);
 }
 
+@keyframes messageAppear {
+    from {
+        opacity: 0;
 
-.message.visible {
+        transform:
+            translateY(9px)
+            scale(.98);
+    }
 
-    opacity: 1;
+    to {
+        opacity: 1;
 
-    transform:
-        translateY(0)
-        scale(1);
-
+        transform:
+            translateY(0)
+            scale(1);
+    }
 }
-
 
 .message.bot {
+    align-self: flex-start;
 
-    background: #f1f1ef;
+    color: #303030;
+
+    background: #f1f1ee;
 
     border-bottom-left-radius: 5px;
-
 }
-
 
 .message.user {
+    align-self: flex-end;
 
-    margin-left: auto;
+    color: #fff;
 
-    background: #111;
-
-    color: white;
+    background: var(--dark);
 
     border-bottom-right-radius: 5px;
-
 }
 
 
-/* =========================================
+/* ==================================================
    TYPING
-========================================= */
+================================================== */
 
 .typing {
-
     display: flex;
+    align-items: center;
 
     gap: 4px;
 
     width: fit-content;
 
-    padding:
-        13px 16px;
+    padding: 12px 15px;
 
     margin:
-        0 24px 12px;
+        3px 24px 8px;
+
+    background: #f1f1ee;
 
     border-radius: 16px;
 
     border-bottom-left-radius: 5px;
 
-    background: #f1f1ef;
-
+    animation:
+        messageAppear
+        .25s
+        ease;
 }
 
-
 .typing span {
-
     width: 6px;
     height: 6px;
+
+    display: block;
 
     border-radius: 50%;
 
     background: #999;
 
     animation:
-        typing .9s infinite;
-
+        typingDot
+        1.2s
+        infinite
+        ease-in-out;
 }
-
 
 .typing span:nth-child(2) {
-
-    animation-delay:
-        .15s;
-
+    animation-delay: .15s;
 }
-
 
 .typing span:nth-child(3) {
-
-    animation-delay:
-        .30s;
-
+    animation-delay: .30s;
 }
 
-
-@keyframes typing {
-
+@keyframes typingDot {
     0%,
     60%,
     100% {
-
-        opacity: .35;
+        opacity: .3;
 
         transform:
             translateY(0);
-
     }
 
     30% {
-
         opacity: 1;
 
         transform:
             translateY(-4px);
-
     }
-
 }
 
 
-/* =========================================
+/* ==================================================
    OPTIONS
-========================================= */
+================================================== */
 
 .options {
-
     display: flex;
-
     flex-direction: column;
 
-    gap: 9px;
+    gap: 8px;
 
     padding:
-        8px 24px 28px;
-
-    opacity: 0;
-
-    transform:
-        translateY(5px);
-
-    transition:
-        opacity .25s ease,
-        transform .25s ease;
-
+        8px 24px 26px;
 }
-
-
-.options.show {
-
-    opacity: 1;
-
-    transform:
-        translateY(0);
-
-}
-
 
 .option {
-
     width: 100%;
 
-    padding:
-        14px 16px;
-
-    border:
-        1px solid #dedede;
-
-    border-radius: 12px;
-
-    background: white;
+    padding: 14px 16px;
 
     text-align: left;
 
-    font-size: 14px;
+    font-family: inherit;
 
-    color: #151515;
+    font-size: 13px;
+
+    line-height: 1.35;
+
+    color: #222;
+
+    background: #fff;
+
+    border: 1px solid #deded9;
+
+    border-radius: 12px;
 
     cursor: pointer;
 
@@ -448,419 +428,676 @@ body {
         translateY(8px);
 
     animation:
-        optionIn .35s ease forwards;
+        optionAppear
+        .35s
+        ease
+        forwards;
 
     transition:
-        border-color .15s ease,
-        background .15s ease,
-        transform .15s ease,
-        box-shadow .15s ease;
-
+        background .16s ease,
+        border-color .16s ease,
+        transform .16s ease,
+        box-shadow .16s ease;
 }
 
+@keyframes optionAppear {
+    from {
+        opacity: 0;
 
-.option:hover {
-
-    border-color: #111;
-
-    background: #fafafa;
-
-    transform:
-        translateY(-2px);
-
-    box-shadow:
-        0 5px 16px
-        rgba(0,0,0,.06);
-
-}
-
-
-.option:active {
-
-    transform:
-        scale(.99);
-
-}
-
-
-@keyframes optionIn {
+        transform:
+            translateY(8px);
+    }
 
     to {
-
         opacity: 1;
 
         transform:
             translateY(0);
-
     }
+}
 
+.option:hover {
+    background: #f8f8f5;
+
+    border-color: #bdbdb7;
+
+    transform:
+        translateY(-1px);
+
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, .05);
+}
+
+.option:active {
+    transform:
+        translateY(0)
+        scale(.99);
+}
+
+.option:focus-visible {
+    outline: 2px solid #777;
+
+    outline-offset: 2px;
 }
 
 
-/* =========================================
+/* ==================================================
    RESULT
-========================================= */
+================================================== */
 
 .result {
-
     margin:
-        8px 24px 25px;
+        4px 24px 28px;
 
-    padding:
-        25px;
-
-    border-radius: 19px;
+    padding: 27px;
 
     background:
         linear-gradient(
             145deg,
-            #f8f8f5,
-            #eeeeea
+            #f8f8f5 0%,
+            #eeeeea 100%
         );
 
     border:
-        1px solid #e5e5df;
+        1px solid #e4e4df;
+
+    border-radius: 20px;
 
     animation:
-        resultIn .45s ease;
-
+        resultAppear
+        .5s
+        cubic-bezier(.2, .8, .2, 1);
 }
 
-
-@keyframes resultIn {
-
+@keyframes resultAppear {
     from {
-
         opacity: 0;
 
         transform:
-            translateY(12px)
-            scale(.97);
-
+            translateY(14px)
+            scale(.98);
     }
 
     to {
-
         opacity: 1;
 
         transform:
             translateY(0)
             scale(1);
-
     }
-
 }
-
 
 .result-icon {
+    width: 46px;
+    height: 46px;
 
-    font-size: 27px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-    margin-bottom: 12px;
+    margin-bottom: 15px;
 
+    background: #fff;
+
+    border-radius: 13px;
+
+    font-size: 23px;
+
+    box-shadow:
+        0 3px 12px rgba(0, 0, 0, .05);
 }
 
-
 .result-label {
+    margin-bottom: 8px;
 
-    font-size: 11px;
+    font-size: 10px;
 
     font-weight: 700;
 
-    letter-spacing: .1em;
+    letter-spacing: .12em;
+
+    text-transform: uppercase;
 
     color: #777;
-
-    margin-bottom: 8px;
-
 }
 
-
 .result h2 {
+    margin-bottom: 10px;
 
     font-size: 21px;
 
     line-height: 1.3;
 
-    margin-bottom: 10px;
-
+    letter-spacing: -.025em;
 }
 
-
 .result-description {
+    max-width: 540px;
 
-    color: #555;
-
-    line-height: 1.55;
+    color: #5b5b58;
 
     font-size: 14px;
 
+    line-height: 1.55;
 }
 
 
+/* ==================================================
+   RESULT PRICE
+================================================== */
+
 .result-price {
+    margin-top: 21px;
 
-    margin-top: 19px;
+    font-size: 34px;
 
-    font-size: 32px;
+    line-height: 1;
 
     font-weight: 750;
 
+    letter-spacing: -.04em;
+
+    color: #111;
+}
+
+.result-price-label {
+    margin-top: 6px;
+
+    font-size: 11px;
+
+    color: #888;
 }
 
 
-.result-meta {
+/* ==================================================
+   CASE SUMMARY
+================================================== */
 
-    margin-top: 12px;
+.result-case {
+    margin-top: 21px;
 
-    padding-top: 13px;
+    padding-top: 18px;
 
     border-top:
-        1px solid #ddd;
-
-    color: #777;
+        1px solid #dcdcd7;
 
     font-size: 12px;
 
+    color: #666;
+}
+
+.result-case strong {
+    display: block;
+
+    margin-bottom: 10px;
+
+    font-size: 12px;
+
+    color: #444;
+}
+
+.case-tags {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 6px;
+}
+
+.case-tags span {
+    padding:
+        6px 9px;
+
+    background: #fff;
+
+    border:
+        1px solid #e1e1dc;
+
+    border-radius: 7px;
+
+    font-size: 10px;
+
+    line-height: 1.25;
+
+    color: #666;
 }
 
 
-.result-button {
+/* ==================================================
+   RESULT BUTTON
+================================================== */
 
+.result-button {
     width: 100%;
 
-    margin-top: 19px;
+    margin-top: 21px;
 
-    padding: 14px;
-
-    border: none;
+    padding: 15px 18px;
 
     border-radius: 11px;
 
-    background: #111;
-
-    color: white;
+    font-family: inherit;
 
     font-size: 14px;
 
-    font-weight: 600;
+    font-weight: 650;
 
     cursor: pointer;
 
     transition:
-        background .15s ease,
-        transform .15s ease;
-
+        transform .16s ease,
+        box-shadow .16s ease,
+        background .16s ease;
 }
 
+.result-button.primary {
+    color: #fff;
+
+    background: #111;
+
+    border:
+        1px solid #111;
+}
+
+.result-button.secondary {
+    color: #111;
+
+    background: #fff;
+
+    border:
+        1px solid #d4d4cf;
+}
 
 .result-button:hover {
-
-    background: #333;
-
     transform:
         translateY(-1px);
 
+    box-shadow:
+        0 5px 15px rgba(0, 0, 0, .08);
+}
+
+.result-button.primary:hover {
+    background: #242424;
+}
+
+.result-button.secondary:hover {
+    background: #f8f8f5;
+}
+
+.result-button:active {
+    transform:
+        translateY(0)
+        scale(.99);
+}
+
+.result-button:focus-visible {
+    outline: 2px solid #777;
+
+    outline-offset: 3px;
 }
 
 
-/* =========================================
-   CONTACT
-========================================= */
+/* ==================================================
+   CONTACT FORM
+================================================== */
 
 .contact-form {
+    margin:
+        4px 24px 30px;
 
-    padding:
-        24px;
+    padding: 25px;
 
-    border-top:
-        1px solid #eeeeee;
+    background: #fafaf8;
+
+    border:
+        1px solid #e2e2dd;
+
+    border-radius: 19px;
 
     animation:
-        formIn .4s ease;
-
+        resultAppear
+        .45s
+        ease;
 }
-
-
-@keyframes formIn {
-
-    from {
-
-        opacity: 0;
-
-        transform:
-            translateY(10px);
-
-    }
-
-    to {
-
-        opacity: 1;
-
-        transform:
-            translateY(0);
-
-    }
-
-}
-
 
 .form-intro {
-
     display: flex;
+    align-items: flex-start;
 
     gap: 12px;
 
     margin-bottom: 22px;
-
 }
 
-
 .form-icon {
-
     width: 42px;
     height: 42px;
 
     flex-shrink: 0;
 
     display: flex;
-
+    align-items: center;
     justify-content: center;
 
-    align-items: center;
+    background: #fff;
+
+    border:
+        1px solid #e4e4df;
 
     border-radius: 11px;
 
-    background: #f1f1ef;
-
-}
-
-
-.contact-form h2 {
-
     font-size: 19px;
-
-    margin-bottom: 5px;
-
 }
 
+.form-intro h2 {
+    font-size: 18px;
 
-.contact-form p {
+    line-height: 1.25;
 
-    font-size: 14px;
+    letter-spacing: -.02em;
+}
+
+.form-intro p {
+    margin-top: 4px;
+
+    font-size: 12px;
 
     line-height: 1.45;
 
-    color: #666;
-
+    color: #777;
 }
 
+
+/* ==================================================
+   FORM LABELS
+================================================== */
 
 .contact-form label {
-
     display: block;
 
-    margin-bottom: 6px;
-
-    font-size: 13px;
-
-    font-weight: 600;
-
-}
-
-
-.contact-form input {
-
-    width: 100%;
-
-    padding: 13px;
-
-    margin-bottom: 16px;
-
-    border:
-        1px solid #ddd;
-
-    border-radius: 10px;
-
-    font-size: 14px;
-
-    outline: none;
-
-}
-
-
-.contact-form input:focus {
-
-    border-color: #111;
-
-    box-shadow:
-        0 0 0 3px
-        rgba(0,0,0,.05);
-
-}
-
-
-.contact-form button {
-
-    width: 100%;
-
-    padding: 15px;
-
-    border: none;
-
-    border-radius: 11px;
-
-    background: #111;
-
-    color: white;
-
-    font-size: 15px;
-
-    cursor: pointer;
-
-}
-
-
-.contact-form button:hover {
-
-    background: #333;
-
-}
-
-
-.contact-form small {
-
-    display: block;
-
-    margin-top: 11px;
+    margin:
+        14px 0 6px;
 
     font-size: 11px;
 
-    line-height: 1.4;
+    font-weight: 600;
 
-    color: #999;
-
+    color: #555;
 }
 
 
-/* =========================================
-   SUMMARY
-========================================= */
+/* ==================================================
+   FORM INPUTS
+================================================== */
 
-.case-summary {
-
-    margin:
-        15px 24px 30px;
+.contact-form input {
+    width: 100%;
 
     padding:
-        20px;
+        12px 13px;
+
+    font-family: inherit;
+
+    font-size: 13px;
+
+    color: #222;
+
+    background: #fff;
 
     border:
-        1px solid #e5e5e5;
+        1px solid #dcdcd7;
 
-    border-radius: 15px;
+    border-radius: 9px;
 
-    background: #fafafa;
+    outline: none;
 
-    animation:
-        resultIn .4
+    transition:
+        border-color .15s ease,
+        box-shadow .15s ease;
+}
+
+.contact-form input::placeholder {
+    color: #aaa;
+}
+
+.contact-form input:hover {
+    border-color: #c8c8c2;
+}
+
+.contact-form input:focus {
+    border-color: #888;
+
+    box-shadow:
+        0 0 0 3px rgba(0, 0, 0, .05);
+}
+
+
+/* ==================================================
+   FORM BUTTON
+================================================== */
+
+#submit-contact {
+    width: 100%;
+
+    margin-top: 20px;
+
+    padding: 14px 18px;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    font-weight: 650;
+
+    color: #fff;
+
+    background: #111;
+
+    border:
+        1px solid #111;
+
+    border-radius: 10px;
+
+    cursor: pointer;
+
+    transition:
+        transform .16s ease,
+        background .16s ease,
+        box-shadow .16s ease;
+}
+
+#submit-contact:hover {
+    background: #252525;
+
+    transform:
+        translateY(-1px);
+
+    box-shadow:
+        0 5px 15px rgba(0, 0, 0, .09);
+}
+
+#submit-contact:active {
+    transform:
+        translateY(0)
+        scale(.99);
+}
+
+#submit-contact:focus-visible {
+    outline: 2px solid #777;
+
+    outline-offset: 3px;
+}
+
+
+/* ==================================================
+   FORM DISCLAIMER
+================================================== */
+
+.contact-form small {
+    display: block;
+
+    margin-top: 12px;
+
+    font-size: 10px;
+
+    line-height: 1.45;
+
+    text-align: center;
+
+    color: #999;
+}
+
+
+/* ==================================================
+   HIDDEN
+================================================== */
+
+.hidden {
+    display: none !important;
+}
+
+
+/* ==================================================
+   SELECTION
+================================================== */
+
+::selection {
+    color: #fff;
+
+    background: #222;
+}
+
+
+/* ==================================================
+   MOBILE
+================================================== */
+
+@media (max-width: 700px) {
+
+    .app {
+        padding:
+            0 0 30px;
+
+        align-items: flex-start;
+    }
+
+    .chat-window {
+        min-height: 100vh;
+
+        max-width: none;
+
+        border-radius: 0;
+
+        border: none;
+
+        box-shadow: none;
+    }
+
+    .chat-header {
+        padding:
+            17px 18px;
+    }
+
+    .progress-container {
+        padding:
+            11px 18px 12px;
+    }
+
+    .chat {
+        padding:
+            25px 18px 8px;
+    }
+
+    .options {
+        padding:
+            8px 18px 25px;
+    }
+
+    .typing {
+        margin-left: 18px;
+        margin-right: 18px;
+    }
+
+    .result {
+        margin:
+            4px 18px 25px;
+
+        padding: 23px;
+    }
+
+    .contact-form {
+        margin:
+            4px 18px 25px;
+
+        padding: 22px;
+    }
+
+    .message {
+        max-width: 88%;
+
+        font-size: 13px;
+    }
+
+    .option {
+        padding:
+            14px;
+
+        font-size: 13px;
+    }
+
+    .result h2 {
+        font-size: 20px;
+    }
+
+    .result-price {
+        font-size: 32px;
+    }
+}
+
+
+/* ==================================================
+   SMALL MOBILE
+================================================== */
+
+@media (max-width: 400px) {
+
+    .brand h1 {
+        font-size: 15px;
+    }
+
+    .status {
+        font-size: 10px;
+    }
+
+    .logo {
+        width: 40px;
+        height: 40px;
+
+        border-radius: 11px;
+    }
+
+    .chat {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .options {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .typing {
+        margin-left: 15px;
+        margin-right: 15px;
+    }
+
+    .result {
+        margin-left: 15px;
+        margin-right: 15px;
+    }
+
+    .contact-form {
+        margin-left: 15px;
+        margin-right: 15px;
+    }
+}
